@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,7 +38,7 @@
 
                 <div class="input-group">
                     <label id="label-faturamento" for="faturamento">Faturamento Bruto Mensal (R$):</label>
-                    <input type="number" id="faturamento" placeholder="Ex: 500000" min="0" step="0.01">
+                    <input type="number" id="faturamento" placeholder="Ex: 500000" min="0" step="0.01" value="500000">
                 </div>
 
                 <div class="input-group" id="group-iss">
@@ -83,7 +83,7 @@
                 <tbody>
                     <tr>
                         <td><strong>IRPJ</strong></td>
-                        <td id="fat-irpj" class="col-fat">R$ 0,00</td>
+                        <td id="fat-irpj">R$ 0,00</td>
                         <td>32%</td>
                         <td id="base-irpj">R$ 0,00</td>
                         <td>15%</td>
@@ -93,7 +93,7 @@
                     </tr>
                     <tr>
                         <td><strong>Adicional de IRPJ</strong></td>
-                        <td class="col-fat">-</td>
+                        <td>-</td>
                         <td>-</td>
                         <td id="base-irpj-add">R$ 0,00</td>
                         <td>10%</td>
@@ -103,7 +103,7 @@
                     </tr>
                     <tr>
                         <td><strong>CSLL</strong></td>
-                        <td id="fat-csll" class="col-fat">R$ 0,00</td>
+                        <td id="fat-csll">R$ 0,00</td>
                         <td>32%</td>
                         <td id="base-csll">R$ 0,00</td>
                         <td>9%</td>
@@ -113,7 +113,7 @@
                     </tr>
                     <tr id="row-pis">
                         <td><strong>PIS</strong></td>
-                        <td id="fat-pis" class="col-fat">R$ 0,00</td>
+                        <td id="fat-pis">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-pis">R$ 0,00</td>
                         <td>0,65%</td>
@@ -123,7 +123,7 @@
                     </tr>
                     <tr id="row-cofins">
                         <td><strong>COFINS</strong></td>
-                        <td id="fat-cofins" class="col-fat">R$ 0,00</td>
+                        <td id="fat-cofins">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-cofins">R$ 0,00</td>
                         <td>3%</td>
@@ -133,7 +133,7 @@
                     </tr>
                     <tr id="row-iss">
                         <td><strong>ISS</strong></td>
-                        <td id="fat-iss" class="col-fat">R$ 0,00</td>
+                        <td id="fat-iss">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-iss">R$ 0,00</td>
                         <td id="aliquota-iss-tab">5%</td>
@@ -146,7 +146,7 @@
             <div id="nota-exportacao" class="alert-box" style="display: none;">
                 <strong>Nota Contábil (Exportação):</strong> No mercado de exportação de serviços para o exterior, há a não incidência constitucional de PIS, COFINS e ISS, mantendo-se apenas o IRPJ e CSLL federais.
             </div>
-            <div id="nota-add-irpj" class="alert-box-info">
+            <div class="alert-box-info">
                 * O Adicional de IRPJ de 10% incide sobre a parcela da base presumida que exceder R$ 20.000,00 por mês (ou R$ 60.000,00 se a apuração selecionada for Trimestral).
             </div>
         </div>
