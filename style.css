@@ -65,27 +65,3 @@ textarea { width: 100%; padding: 15px; border: none; border-radius: 8px; font-si
 .guia-item { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
 .guia-item h3 { font-size: 16px; margin-bottom: 8px; color: #0f172a; }
 .guia-item p { font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 10px; }
-
-/* ESTILOS EXCLUSIVOS DO PDF */
-.pdf-wrapper { padding: 35px; background-color: #ffffff; color: #1e293b; font-family: Arial, sans-serif; }
-.pdf-header { text-align: center; margin-bottom: 25px; }
-.pdf-header h2 { font-size: 18px; color: #0f172a; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 4px; }
-.pdf-subtitle { font-size: 12px; color: #475569; text-transform: uppercase; }
-.pdf-divider { margin-top: 12px; border-top: 2px solid #0f172a; width: 100%; }
-.pdf-meta-box { background-color: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; line-height: 1.7; margin-bottom: 25px; }
-.pdf-section-title { font-size: 13px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 12px; }
-
-.pdf-table-summary { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 20px; }
-.pdf-table-summary td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; }
-.txt-right { text-align: right; }
-.font-bold { font-weight: bold; }
-.text-red { color: #b91c1c; }
-.text-blue { color: #1d4ed8; }
-.text-green { color: #16a34a; }
-.bg-light-green { background-color: #f0fdf4; }
-
-.pdf-table-main { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px; }
-.pdf-table-main th { background-color: #f1f5f9; color: #334155; font-weight: bold; padding: 8px 10px; border: 1px solid #cbd5e1; text-align: left; }
-.pdf-table-main td { padding: 8px 10px; border: 1px solid #cbd5e1; }
-.pdf-footer-note { margin-top: 35px; font-size: 10px; color: #64748b; line-height: 1.5; }
-.pdf-sign { font-size: 11px; font-weight: bold; color: #334155; text-align: right; }
