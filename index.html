@@ -26,19 +26,46 @@
                         </select>
                     </div>
 
-                    <div class="input-group">
-                        <label for="mercado">Cenário Contábil:</label>
-                        <select id="mercado">
-                            <option value="nacional_com">Nacional (Com Retenções na Fonte)</option>
-                            <option value="nacional_sem">Nacional (Sem Retenções na Fonte)</option>
-                            <option value="exportacao">Exportação de Serviços (Isento PIS/COFINS/ISS)</option>
+                    <div class="input-group" id="group-trimestre" style="display: none;">
+                        <label for="trimestre">Qual Trimestre?</label>
+                        <select id="trimestre">
+                            <option value="1">1º Trimestre (Jan, Fev, Mar)</option>
+                            <option value="2">2º Trimestre (Abr, Mai, Jun)</option>
+                            <option value="3">3º Trimestre (Jul, Ago, Set)</option>
+                            <option value="4">4º Trimestre (Out, Nov, Dez)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="input-group">
-                    <label id="label-faturamento" for="faturamento">Faturamento Bruto Mensal (R$):</label>
-                    <input type="number" id="faturamento" placeholder="Ex: 500000" min="0" step="0.01" value="500000">
+                    <label for="mercado">Cenário Contábil:</label>
+                    <select id="mercado">
+                        <option value="nacional_com">Nacional (Com Retenções na Fonte)</option>
+                        <option value="nacional_sem">Nacional (Sem Retenções na Fonte)</option>
+                        <option value="exportacao">Exportação de Serviços (Isento PIS/COFINS/ISS)</option>
+                    </select>
+                </div>
+
+                <div id="container-mensal">
+                    <div class="input-group">
+                        <label id="label-faturamento" for="faturamento_mensal">Faturamento Bruto Mensal (R$):</label>
+                        <input type="number" id="faturamento_mensal" placeholder="Ex: 500000" min="0" step="0.01" value="500000">
+                    </div>
+                </div>
+
+                <div id="container-trimestral" class="grid-3-col" style="display: none;">
+                    <div class="input-group">
+                        <label id="lbl-mes1" for="fat_mes1">Janeiro (R$):</label>
+                        <input type="number" id="fat_mes1" value="0" min="0" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label id="lbl-mes2" for="fat_mes2">Fevereiro (R$):</label>
+                        <input type="number" id="fat_mes2" value="0" min="0" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label id="lbl-mes3" for="fat_mes3">Março (R$):</label>
+                        <input type="number" id="fat_mes3" value="0" min="0" step="0.01">
+                    </div>
                 </div>
 
                 <div class="input-group" id="group-iss">
@@ -62,6 +89,9 @@
                     <span>Faturamento Líquido:</span>
                     <span id="res-valor-liquido">R$ 0,00</span>
                 </div>
+                <div class="result-row" style="margin-top: 15px; font-size: 13px; color: #64748b; font-style: italic;">
+                    Faturamento Total Considerado: <strong id="res-fat-total">R$ 0,00</strong>
+                </div>
             </div>
         </div>
 
@@ -83,7 +113,7 @@
                 <tbody>
                     <tr>
                         <td><strong>IRPJ</strong></td>
-                        <td id="fat-irpj">R$ 0,00</td>
+                        <td id="t-fat-irpj" class="col-fat">R$ 0,00</td>
                         <td>32%</td>
                         <td id="base-irpj">R$ 0,00</td>
                         <td>15%</td>
@@ -93,7 +123,7 @@
                     </tr>
                     <tr>
                         <td><strong>Adicional de IRPJ</strong></td>
-                        <td>-</td>
+                        <td class="col-fat">-</td>
                         <td>-</td>
                         <td id="base-irpj-add">R$ 0,00</td>
                         <td>10%</td>
@@ -103,7 +133,7 @@
                     </tr>
                     <tr>
                         <td><strong>CSLL</strong></td>
-                        <td id="fat-csll">R$ 0,00</td>
+                        <td id="t-fat-csll" class="col-fat">R$ 0,00</td>
                         <td>32%</td>
                         <td id="base-csll">R$ 0,00</td>
                         <td>9%</td>
@@ -113,7 +143,7 @@
                     </tr>
                     <tr id="row-pis">
                         <td><strong>PIS</strong></td>
-                        <td id="fat-pis">R$ 0,00</td>
+                        <td id="t-fat-pis" class="col-fat">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-pis">R$ 0,00</td>
                         <td>0,65%</td>
@@ -123,7 +153,7 @@
                     </tr>
                     <tr id="row-cofins">
                         <td><strong>COFINS</strong></td>
-                        <td id="fat-cofins">R$ 0,00</td>
+                        <td id="t-fat-cofins" class="col-fat">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-cofins">R$ 0,00</td>
                         <td>3%</td>
@@ -133,7 +163,7 @@
                     </tr>
                     <tr id="row-iss">
                         <td><strong>ISS</strong></td>
-                        <td id="fat-iss">R$ 0,00</td>
+                        <td id="t-fat-iss" class="col-fat">R$ 0,00</td>
                         <td>100%</td>
                         <td id="base-iss">R$ 0,00</td>
                         <td id="aliquota-iss-tab">5%</td>
@@ -147,8 +177,17 @@
                 <strong>Nota Contábil (Exportação):</strong> No mercado de exportação de serviços para o exterior, há a não incidência constitucional de PIS, COFINS e ISS, mantendo-se apenas o IRPJ e CSLL federais.
             </div>
             <div class="alert-box-info">
-                * O Adicional de IRPJ de 10% incide sobre a parcela da base presumida que exceder R$ 20.000,00 por mês (ou R$ 60.000,00 se a apuração selecionada for Trimestral).
+                * O Adicional de IRPJ de 10% incide sobre a parcela da base presumida que exceder R$ 20.000,00 por mês (ou R$ 60.000,00 no trimestre).
             </div>
+        </div>
+
+        <div class="card card-message" style="margin-top: 25px;">
+            <h2>Sugestão de Mensagem para o Cliente</h2>
+            <div class="alert-box-warning">
+                <strong>Atenção:</strong> Por favor, revise as informações abaixo antes de copiar e enviar ao seu cliente.
+            </div>
+            <textarea id="texto-cliente" rows="10" readonly></textarea>
+            <button id="btn-copiar" class="btn-primary">Copiar Mensagem</button>
         </div>
     </div>
     <script src="script.js"></script>
