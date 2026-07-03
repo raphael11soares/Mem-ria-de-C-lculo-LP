@@ -1,150 +1,180 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const inputFaturamento = document.getElementById('faturamento');
-    const inputIss = document.getElementById('aliquota-iss');
-    const selectMercado = document.getElementById('mercado');
-    const selectPeriodo = document.getElementById('periodo');
-    const labelFaturamento = document.getElementById('label-faturamento');
-    const groupIss = document.getElementById('group-iss');
-    const notaExportacao = document.getElementById('nota-exportacao');
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
 
-    // Monitorização de alterações
-    inputFaturamento.addEventListener('input', calcularImpostos);
-    inputIss.addEventListener('input', calcularImpostos);
-    
-    selectPeriodo.addEventListener('change', function() {
-        if (selectPeriodo.value === 'trimestral') {
-            labelFaturamento.innerText = "Faturamento Bruto Trimestral (R$):";
-        } else {
-            labelFaturamento.innerText = "Faturamento Bruto Mensal (R$):";
-        }
-        calcularImpostos();
-    });
-    
-    selectMercado.addEventListener('change', function() {
-        if (selectMercado.value === 'exportacao') {
-            groupIss.style.opacity = '0.3';
-            groupIss.style.pointerEvents = 'none';
-            notaExportacao.style.display = 'block';
-        } else {
-            groupIss.style.opacity = '1';
-            groupIss.style.pointerEvents = 'auto';
-            notaExportacao.style.display = 'none';
-        }
-        calcularImpostos();
-    });
+body {
+    background-color: #f4f6f9;
+    color: #1e293b;
+    padding: 30px 15px;
+}
 
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+.container {
+    max-width: 1250px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: 8px;
+}
+
+header h1 {
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+header p {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.grid-inputs-internos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 768px) {
+    .grid, .grid-inputs-internos {
+        grid-template-columns: 1fr;
     }
+}
 
-    function calcularImpostos() {
-        const faturamento = parseFloat(inputFaturamento.value) || 0;
-        const aliquotaIss = parseFloat(inputIss.value) || 0;
-        const mercado = selectMercado.value;
-        const periodo = selectPeriodo.value;
+.card {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    border: 1px solid #e2e8f0;
+}
 
-        // Regra do Lucro Presumido (32% de presunção para serviços)
-        const percentualPresuncao = 0.32;
-        const basePresumida = faturamento * percentualPresuncao;
-        const tetoAdicionalIR = (periodo === 'mensal') ? 20000 : 60000;
+.card h2 {
+    font-size: 16px;
+    color: #334155;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-        // 1. Definição das Retenções na Fonte (Apenas no cenário Nacional COM retenção)
-        let retidoIrrf = 0;
-        let retidoCsll = 0;
-        let retidoPis = 0;
-        let retidoCofins = 0;
+.input-group {
+    margin-bottom: 18px;
+    transition: opacity 0.2s ease;
+}
 
-        if (mercado === 'nacional_com' && faturamento > 0) {
-            retidoIrrf = faturamento * 0.015;  // 1,5%
-            retidoCsll = faturamento * 0.01;   // 1,0%
-            retidoPis = faturamento * 0.0065;  // 0,65%
-            retidoCofins = faturamento * 0.03; // 3,0%
-        }
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+}
 
-        // 2. Impostos Devidos Totais
-        const devidoIrpj = basePresumida * 0.15; // 15%
-        
-        // Cálculo do Adicional de IRPJ (10% sobre o que excede o teto de 20k/60k)
-        let devidoIrpjAdd = 0;
-        let basePresumidaExcedente = basePresumida - tetoAdicionalIR;
-        if (basePresumidaExcedente > 0) {
-            devidoIrpjAdd = basePresumidaExcedente * 0.10;
-        }
+.input-group input, .input-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 15px;
+    color: #0f172a;
+    outline: none;
+}
 
-        const devidoCsll = basePresumida * 0.09; // 9%
+.input-group input:focus, .input-group select:focus {
+    border-color: #2563eb;
+}
 
-        // PIS, COFINS e ISS (Zeradinhos em caso de Exportação)
-        const devidoPis = (mercado !== 'exportacao') ? (faturamento * 0.0065) : 0;
-        const devidoCofins = (mercado !== 'exportacao') ? (faturamento * 0.03) : 0;
-        const devidoIss = (mercado !== 'exportacao') ? (faturamento * (aliquotaIss / 100)) : 0;
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 15px;
+}
 
-        // 3. Valor Líquido a Pagar nas Guias (Abatendo os valores retidos)
-        const pagarIrpj = Math.max(0, devidoIrpj - retidoIrrf);
-        const pagarIrpjAdd = devidoIrpjAdd; 
-        const pagarCsll = Math.max(0, devidoCsll - retidoCsll);
-        const pagarPis = Math.max(0, devidoPis - retidoPis);
-        const pagarCofins = Math.max(0, devidoCofins - retidoCofins);
-        const pagarIss = devidoIss;
+.result-row.highlight {
+    font-weight: bold;
+    font-size: 16px;
+}
 
-        // 4. Totais Consolidados
-        const totalCargaTributaria = devidoIrpj + devidoIrpjAdd + devidoCsll + devidoPis + devidoCofins + devidoIss;
-        const valorLiquido = faturamento - totalCargaTributaria;
-        const aliquotaEfetiva = faturamento > 0 ? (totalCargaTributaria / faturamento) * 100 : 0;
+.result-row.total {
+    color: #b91c1c;
+    background: #fef2f2;
+    padding: 14px;
+    border-radius: 6px;
+    margin-top: 12px;
+    border-bottom: none;
+}
 
-        // --- PREENCHIMENTO VISUAL DA TABELA DETALHADA ---
-        document.getElementById('fat-irpj').innerText = formatarMoeda(faturamento);
-        document.getElementById('fat-csll').innerText = formatarMoeda(faturamento);
-        document.getElementById('fat-pis').innerText = formatarMoeda(faturamento);
-        document.getElementById('fat-cofins').innerText = formatarMoeda(faturamento);
-        document.getElementById('fat-iss').innerText = formatarMoeda(faturamento);
+.result-row.net {
+    color: #15803d;
+    background: #f0fdf4;
+    padding: 14px;
+    border-radius: 6px;
+    margin-top: 12px;
+    border-bottom: none;
+}
 
-        // IRPJ
-        document.getElementById('base-irpj').innerText = formatarMoeda(basePresumida);
-        document.getElementById('devido-irpj').innerText = formatarMoeda(devidoIrpj);
-        document.getElementById('retido-irpj').innerText = formatarMoeda(retidoIrrf);
-        document.getElementById('pagar-irpj').innerText = formatarMoeda(pagarIrpj);
+.card-details {
+    overflow-x: auto;
+}
 
-        // Adicional IRPJ
-        document.getElementById('base-irpj-add').innerText = formatarMoeda(basePresumidaExcedente > 0 ? basePresumidaExcedente : 0);
-        document.getElementById('devido-irpj-add').innerText = formatarMoeda(devidoIrpjAdd);
-        document.getElementById('pagar-irpj-add').innerText = formatarMoeda(pagarIrpjAdd);
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
 
-        // CSLL
-        document.getElementById('base-csll').innerText = formatarMoeda(basePresumida);
-        document.getElementById('devido-csll').innerText = formatarMoeda(devidoCsll);
-        document.getElementById('retido-csll').innerText = formatarMoeda(retidoCsll);
-        document.getElementById('pagar-csll').innerText = formatarMoeda(pagarCsll);
+th, td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e2e8f0;
+}
 
-        // PIS
-        document.getElementById('base-pis').innerText = formatarMoeda(faturamento);
-        document.getElementById('devido-pis').innerText = formatarMoeda(devidoPis);
-        document.getElementById('retido-pis').innerText = formatarMoeda(retidoPis);
-        document.getElementById('pagar-pis').innerText = formatarMoeda(pagarPis);
+th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+}
 
-        // COFINS
-        document.getElementById('base-cofins').innerText = formatarMoeda(faturamento);
-        document.getElementById('devido-cofins').innerText = formatarMoeda(devidoCofins);
-        document.getElementById('retido-cofins').innerText = formatarMoeda(retidoCofins);
-        document.getElementById('pagar-cofins').innerText = formatarMoeda(pagarCofins);
+tr {
+    transition: opacity 0.2s ease;
+}
 
-        // ISS
-        document.getElementById('base-iss').innerText = formatarMoeda(faturamento);
-        document.getElementById('aliquota-iss-tab').innerText = mercado !== 'exportacao' ? `${aliquotaIss}%` : '0% (Isento)';
-        document.getElementById('devido-iss').innerText = formatarMoeda(devidoIss);
-        document.getElementById('pagar-iss').innerText = formatarMoeda(pagarIss);
+tr:hover {
+    background-color: #f8fafc;
+}
 
-        // Opacidade visual para indicar isenção nas linhas caso seja exportação
-        const linhasIsentas = ['row-pis', 'row-cofins', 'row-iss'];
-        linhasIsentas.forEach(id => {
-            document.getElementById(id).style.opacity = (mercado === 'exportacao') ? '0.4' : '1';
-        });
+.alert-box {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    color: #0369a1;
+    font-size: 13.5px;
+    line-height: 1.5;
+    border-radius: 0 6px 6px 0;
+}
 
-        // Atualização dos Painéis Superiores de Resumo
-        document.getElementById('res-aliquota-efetiva').innerText = `${aliquotaEfetiva.toFixed(2)}%`.replace('.', ',');
-        document.getElementById('res-total-impostos').innerText = formatarMoeda(totalCargaTributaria);
-        document.getElementById('res-valor-liquido').innerText = formatarMoeda(valorLiquido);
-    }
-
-    // Executa a primeira vez automaticamente
-    calcularImpostos();
-});
+.alert-box-info {
+    margin-top: 10px;
+    color: #64748b;
+    font-size: 12px;
+    font-style: italic;
+}
