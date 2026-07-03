@@ -14,8 +14,8 @@
         </header>
 
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('simulador')">Simulador Inteligente</button>
-            <button class="tab-btn" onclick="switchTab('guia')">Guia de Cenários & Regras</button>
+            <button class="tab-btn active" data-target="tab-simulador">Simulador Inteligente</button>
+            <button class="tab-btn" data-target="tab-guia">Guia de Cenários & Regras</button>
         </div>
 
         <div id="tab-simulador" class="tab-content active">
@@ -45,17 +45,25 @@
 
                     <div class="grid-2-col">
                         <div class="input-group">
-                            <label for="regulamentado">Profissão Regulamentada? (Ex: Médicos, Engenheiros)</label>
+                            <label for="regulamentado">Profissão Regulamentada? (Ex: Médicos, Eng.)</label>
                             <select id="regulamentado">
                                 <option value="sim">Sim (Presunção travada em 32%)</option>
-                                <option value="nao">Não (Pode reduzir IRPJ para 16% até R$ 120k/ano)</option>
+                                <option value="nao">Não (Pode reduzir IRPJ para 16% até R$ 120k)</option>
                             </select>
                         </div>
 
-                        <div class="input-group">
-                            <label for="acumulado_ano">Faturamento Acumulado Anterior no Ano (R$):</label>
-                            <input type="number" id="acumulado_ano" value="0" min="0" step="0.01" placeholder="Faturamento antes deste período">
+                        <div class="input-group" id="group-acumulado" style="display: none;">
+                            <label for="acumulado_ano">Faturamento Acumulado Anterior (R$):</label>
+                            <input type="number" id="acumulado_ano" value="0" min="0" step="0.01">
                         </div>
+                    </div>
+
+                    <div class="input-group" id="group-retroativo-pago" style="display: none; background: #fffbeb; padding: 10px; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                        <label for="retroativo_pago" style="color: #b45309; margin-bottom: 5px;">⚠️ O cliente JÁ RECOLHEU o IRPJ retroativo referente ao estouro dos 120 mil em meses/trimestres passados?</label>
+                        <select id="retroativo_pago" style="border-color: #fcd34d;">
+                            <option value="nao">Não (Cobrar a diferença retroativa nesta simulação)</option>
+                            <option value="sim">Sim (Já pagou, usar apenas 32% daqui pra frente)</option>
+                        </select>
                     </div>
 
                     <div class="input-group">
@@ -76,7 +84,7 @@
                     </div>
 
                     <h2 style="margin-top: 25px;">2. Lançamento de Faturamento Bruto</h2>
-                    <p class="subtitle-table">Insira os valores nas colunas permitidas pelo cenário selecionado:</p>
+                    <p class="subtitle-table">Campos cinzas bloqueados pelo cenário não participam do cálculo.</p>
                     
                     <div class="table-responsive">
                         <table class="table-inputs">
@@ -115,12 +123,10 @@
                         </div>
                     </div>
 
-                    <div id="status-limite-120k" class="card-status status-ok">
-                        <h3>Monitoramento do Limite (R$ 120k/Ano)</h3>
+                    <div id="status-limite-120k" class="card-status status-disabled">
+                        <h3>Monitoramento (R$ 120k/Ano)</h3>
                         <p id="texto-status-120k">Carregando informações...</p>
-                        <div id="alerta-complemento" class="mini-alert" style="display:none;">
-                            <strong>Aviso Contábil:</strong> Como o limite estourou neste trimestre, a diferença (de 16% para 32%) deve ser recolhida retroativamente!
-                        </div>
+                        <div id="alerta-complemento" class="mini-alert" style="display:none;"></div>
                     </div>
                 </div>
             </div>
@@ -143,7 +149,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>IRPJ</strong></td>
+                                <td><strong>IRPJ Normal</strong></td>
                                 <td id="t-fat-irpj">R$ 0,00</td>
                                 <td id="t-pres-irpj">32%</td>
                                 <td id="base-irpj">R$ 0,00</td>
@@ -151,6 +157,16 @@
                                 <td id="devido-irpj">R$ 0,00</td>
                                 <td id="retido-irpj">R$ 0,00</td>
                                 <td id="pagar-irpj">R$ 0,00</td>
+                            </tr>
+                            <tr id="row-retroativo" style="display:none; background-color: #fffbeb;">
+                                <td style="color: #b45309;"><strong>IRPJ Complementar (Retroativo 120k)</strong></td>
+                                <td id="t-fat-retro">-</td>
+                                <td>16% (Dif)</td>
+                                <td id="base-retro">R$ 0,00</td>
+                                <td>15%</td>
+                                <td id="devido-retro">R$ 0,00</td>
+                                <td>-</td>
+                                <td id="pagar-retro" style="font-weight:bold; color:#b45309;">R$ 0,00</td>
                             </tr>
                             <tr>
                                 <td><strong>Adicional de IRPJ (10%)</strong></td>
@@ -208,44 +224,28 @@
             </div>
 
             <div class="card card-message" style="margin-top: 25px;">
-                <h2>Texto Sugerido para Envio ao Cliente</h2>
-                <div class="alert-box-warning">
-                    <strong>⚠️ AVISO DE SEGURANÇA:</strong> Revise com atenção todas as alíquotas, limites e valores calculados antes de enviar esta mensagem ao cliente final.
+                <h2>📱 Texto Formatado para Envio ao Cliente</h2>
+                <div class="alert-box-info" style="margin-bottom: 15px;">
+                    O texto abaixo já contém formatação nativa para o WhatsApp (negritos e espaçamentos). Basta copiar e enviar!
                 </div>
-                <textarea id="texto-cliente" rows="11" readonly></textarea>
-                <button id="btn-copiar" class="btn-primary">Copiar Texto Formatado</button>
+                <div class="whatsapp-preview">
+                    <textarea id="texto-cliente" rows="18" readonly></textarea>
+                </div>
+                <button id="btn-copiar" class="btn-primary" style="width: 100%; margin-top: 10px; font-size: 16px;">📋 Copiar Mensagem para o Cliente</button>
             </div>
         </div>
 
         <div id="tab-guia" class="tab-content">
             <div class="card">
                 <h2>Manual Prático de Cenários Tributários</h2>
-                <p style="margin-bottom:20px; color:#475569;">Entenda como funciona a lógica legal por trás de cada opção habilitada nesta ferramenta:</p>
-                
                 <div class="guia-item">
                     <h3>1. O Benefício do Limite de R$ 120 mil/ano (IRPJ Reduzido)</h3>
-                    <p>Empresas prestadoras de serviços comerciais ou genéricos no Lucro Presumido podem calcular o IRPJ sob uma base presumida de <strong>16%</strong> (em vez de 32%), desde que o faturamento bruto anual previsto não ultrapasse R$ 120.000,00.</p>
-                    <p><strong>Exceção (Profissões Regulamentadas):</strong> Atividades que exigem habilitação técnica profissional ou regulamentação legal expressa (como clínicas médicas, advocacia, engenharias e arquitetura) são <strong>proibidas</strong> por lei de usar essa redução, aplicando-se 32% desde o primeiro real faturado.</p>
-                    <p><strong>O Estouro do Limite:</strong> Caso a empresa opte pelos 16% e estoure o teto no decorrer do ano, ela deverá recolher a diferença tributária (mais 16% de presunção sobre o passado) integralmente na apuração do trimestre em que ocorreu o excesso.</p>
+                    <p>Empresas prestadoras de serviços no Lucro Presumido podem calcular o IRPJ sob uma base de <strong>16%</strong> (em vez de 32%), desde que o faturamento anual não ultrapasse R$ 120.000,00.</p>
+                    <p><strong>A Regra do Retroativo:</strong> Caso a empresa estoure o teto, ela deverá recolher a diferença tributária (16% de presunção sobre os meses passados que faturaram abaixo do teto) integralmente na apuração do trimestre do estouro.</p>
                 </div>
-
                 <div class="guia-item">
-                    <h3>2. Cenários de Faturamento Misto (Nacional + Exterior)</h3>
-                    <ul>
-                        <li><strong>Nacional (Com Retenção) + Exportação:</strong> Utilizado quando o cliente atende grandes empresas no Brasil (que aplicam a retenção na fonte de 4,65% mais 1,5% de IRRF) e também exporta serviços para fora do país.</li>
-                        <li><strong>Nacional (Sem Retenção) + Exportação:</strong> Aplicado quando os serviços prestados no Brasil são direcionados a Pessoas Físicas (PF) ou entidades dispensadas de retenção na fonte, mantendo a imunidade de impostos federais no faturamento internacional.</li>
-                        <li><strong>Misto Completo:</strong> O cenário ideal para empresas que emitem notas para múltiplos tomadores diferentes no Brasil (gerando faturamentos com e sem retenção combinados) além de captarem receitas direto do exterior.</li>
-                    </ul>
-                </div>
-
-                <div class="guia-item">
-                    <h3>3. Imunidades Legais da Exportação de Serviços</h3>
-                    <p>De acordo com a legislação brasileira (Art. 156 da CF/88 e leis complementares), a exportação de serviços para tomadores no exterior traz benefícios expressivos, desde que haja o ingresso efetivo de divisas no país:</p>
-                    <ul>
-                        <li><strong>ISS:</strong> Isenção constitucional caso o resultado do serviço seja verificado e usufruído exclusivamente no exterior.</li>
-                        <li><strong>PIS e COFINS:</strong> Não incidência das alíquotas cumulativas sobre as receitas de exportação.</li>
-                        <li><strong>IRPJ e CSLL:</strong> São cobrados normalmente sobre a base presumida tributável (32%), sem qualquer tipo de isenção por mercado exterior.</li>
-                    </ul>
+                    <h3>2. Cenários Mistos</h3>
+                    <p>O sistema trava automaticamente as colunas da tabela de faturamento que não condizem com o cenário selecionado. O objetivo disso é impedir o lançamento acidental de valores em campos imunes ou não retidos, protegendo o cálculo da sua contabilidade.</p>
                 </div>
             </div>
         </div>
