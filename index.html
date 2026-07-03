@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Simulação Tributária - LP</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="container">
@@ -121,6 +121,8 @@
                             <span>Faturamento Bruto no Período:</span>
                             <span id="res-fat-periodo" style="font-weight:600;">R$ 0,00</span>
                         </div>
+                        
+                        <button id="btn-gerar-pdf" class="btn-pdf-trigger">📄 Gerar Relatório PDF Oficial</button>
                     </div>
 
                     <div id="status-limite-120k" class="card-status status-disabled">
@@ -224,7 +226,7 @@
             </div>
 
             <div class="card card-message" style="margin-top: 25px;">
-                <h2>📱 Texto Formatado para Envio ao Cliente</h2>
+                <h2>📱 Texto Formatado para Envio ao Client</h2>
                 <div class="alert-box-info" style="margin-bottom: 15px;">
                     O texto abaixo já contém formatação nativa para o WhatsApp (negritos e espaçamentos). Basta copiar e enviar!
                 </div>
@@ -250,6 +252,69 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=2"></script>
+
+    <div id="pdf-report-template" style="display: none;">
+        <div class="pdf-wrapper">
+            <div class="pdf-header">
+                <h2>RELATÓRIO EXECUTIVE DE PLANEJAMENTO TRIBUTÁRIO</h2>
+                <p class="pdf-subtitle">Simulação Avançada — Regime do Lucro Presumido</p>
+                <div class="pdf-divider"></div>
+            </div>
+            
+            <div class="pdf-meta-box">
+                <p><strong>Cenário Contábil Selecionado:</strong> <span id="pdf-txt-cenario"></span></p>
+                <p><strong>Período Analisado:</strong> <span id="pdf-txt-periodo"></span></p>
+                <p><strong>Data de Emissão:</strong> <span id="pdf-txt-data"></span></p>
+                <p><strong>Enquadramento IRPJ:</strong> Prestação de Serviços (<span id="pdf-txt-enquadramento"></span> Base Presumida)</p>
+            </div>
+
+            <div class="pdf-section-title">1. Resumo dos Indicadores Estratégicos</div>
+            <table class="pdf-table-summary">
+                <tr>
+                    <td><strong>Faturamento Bruto Consolidado:</strong></td>
+                    <td id="pdf-val-bruto" class="txt-right font-bold">R$ 0,00</td>
+                </tr>
+                <tr>
+                    <td><strong>Carga Tributária Total Gerada:</strong></td>
+                    <td id="pdf-val-impostos" class="txt-right font-bold text-red">R$ 0,00</td>
+                </tr>
+                <tr>
+                    <td><strong>Alíquota Efetiva Real sobre a Receita:</strong></td>
+                    <td id="pdf-val-aliquota" class="txt-right font-bold text-blue">0,00%</td>
+                </tr>
+                <tr class="bg-light-green">
+                    <td><strong>Resultado Líquido Estimado (Disponível em Caixa):</strong></td>
+                    <td id="pdf-val-liquido" class="txt-right font-bold text-green">R$ 0,00</td>
+                </tr>
+            </table>
+
+            <div class="pdf-section-title" style="margin-top: 30px;">2. Memória de Cálculo Detalhada por Tributo</div>
+            <table class="pdf-table-main">
+                <thead>
+                    <tr>
+                        <th>Tributo</th>
+                        <th>Base Bruta</th>
+                        <th>Presunção</th>
+                        <th>Base de Calc.</th>
+                        <th>Alíquota</th>
+                        <th>Vlr. Devido</th>
+                        <th>Retido (NF)</th>
+                        <th>A Recolher</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-table-rows-target">
+                    </tbody>
+            </table>
+
+            <div class="pdf-footer-note">
+                <p><strong>Nota Legal Contábil:</strong> Este documento constitui um estudo técnico-estimativo fundamentado nas regras federais e municipais vigentes do Lucro Presumido (Art. 33 da Lei nº 9.250/95 e regulamentações do IR). Os valores simulados dependem da efetiva homologação das notas fiscais e enquadramento cadastral definitivo da pessoa jurídica.</p>
+                <div class="pdf-divider" style="margin-top: 40px; border-style: dashed;"></div>
+                <p class="pdf-sign">Elaborado por: Plataforma de Inteligência e Planejamento Tributário</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="script.js?v=3"></script>
 </body>
 </html>
