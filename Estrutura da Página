@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Impostos - Lucro Presumido</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Simulador de Impostos Contábil</h1>
+            <p>Prestação de Serviços — Lucro Presumido (Nacional vs. Exportação)</p>
+        </header>
+
+        <div class="grid">
+            <div class="card card-inputs">
+                <h2>Dados de Entrada</h2>
+                
+                <div class="input-group">
+                    <label for="mercado">Mercado de Destino:</label>
+                    <select id="mercado">
+                        <option value="nacional">Nacional (Com Retenções)</option>
+                        <option value="exportacao">Exportação de Serviços (Isento de PIS/COFINS/ISS)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="faturamento">Faturamento Bruto Mensal (R$):</label>
+                    <input type="number" id="faturamento" placeholder="Ex: 500000" min="0" step="0.01">
+                </div>
+
+                <div class="input-group" id="group-iss">
+                    <label for="aliquota-iss">Alíquota de ISS Municipal (%):</label>
+                    <input type="number" id="aliquota-iss" value="5" min="2" max="5" step="0.1">
+                </div>
+            </div>
+
+            <div class="card card-results">
+                <h2>Resumo Consolidado</h2>
+                
+                <div class="result-row highlight">
+                    <span>Alíquota Efetiva Real:</span>
+                    <span id="res-aliquota-efetiva">0,00%</span>
+                </div>
+                <div class="result-row highlight total">
+                    <span>Carga Tributária Total:</span>
+                    <span id="res-total-impostos">R$ 0,00</span>
+                </div>
+                <div class="result-row highlight net">
+                    <span>Faturamento Líquido:</span>
+                    <span id="res-valor-liquido">R$ 0,00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-details">
+            <h2>Detalhamento dos Impostos Devidos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Imposto</th>
+                        <th>Base de Cálculo</th>
+                        <th>Alíquota</th>
+                        <th>Valor Devido</th>
+                        <th>Retenções na Fonte (NF)</th>
+                        <th>Valor a Pagar (Guia)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>IRPJ</strong></td>
+                        <td id="base-irpj">R$ 0,00</td>
+                        <td>15%</td>
+                        <td id="devido-irpj">R$ 0,00</td>
+                        <td id="retido-irpj">R$ 0,00</td>
+                        <td id="pagar-irpj">R$ 0,00</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Adicional de IRPJ</strong></td>
+                        <td id="base-irpj-add">R$ 0,00</td>
+                        <td>10%</td>
+                        <td id="devido-irpj-add">R$ 0,00</td>
+                        <td>-</td>
+                        <td id="pagar-irpj-add">R$ 0,00</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CSLL</strong></td>
+                        <td id="base-csll">R$ 0,00</td>
+                        <td>9%</td>
+                        <td id="devido-csll">R$ 0,00</td>
+                        <td id="retido-csll">R$ 0,00</td>
+                        <td id="pagar-csll">R$ 0,00</td>
+                    </tr>
+                    <tr id="row-pis">
+                        <td><strong>PIS</strong></td>
+                        <td id="base-pis">R$ 0,00</td>
+                        <td>0,65%</td>
+                        <td id="devido-pis">R$ 0,00</td>
+                        <td id="retido-pis">R$ 0,00</td>
+                        <td id="pagar-pis">R$ 0,00</td>
+                    </tr>
+                    <tr id="row-cofins">
+                        <td><strong>COFINS</strong></td>
+                        <td id="base-cofins">R$ 0,00</td>
+                        <td>3%</td>
+                        <td id="devido-cofins">R$ 0,00</td>
+                        <td id="retido-cofins">R$ 0,00</td>
+                        <td id="pagar-cofins">R$ 0,00</td>
+                    </tr>
+                    <tr id="row-iss">
+                        <td><strong>ISS</strong></td>
+                        <td id="base-iss">R$ 0,00</td>
+                        <td id="aliquota-iss-tab">5%</td>
+                        <td id="devido-iss">R$ 0,00</td>
+                        <td>-</td>
+                        <td id="pagar-iss">R$ 0,00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="nota-exportacao" class="alert-box" style="display: none;">
+                <strong>Nota Contábil:</strong> No mercado de exportação de serviços para o exterior, há a não incidência/isenção constitucional de PIS, COFINS e ISS, mantendo-se apenas a apuração federal de IRPJ e CSLL sobre o lucro presumido.
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
