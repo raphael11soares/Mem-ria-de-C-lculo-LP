@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Monitorização de alterações
     inputFaturamento.addEventListener('input', calcularImpostos);
     inputIss.addEventListener('input', calcularImpostos);
+    
     selectPeriodo.addEventListener('change', function() {
         if (selectPeriodo.value === 'trimestral') {
             labelFaturamento.innerText = "Faturamento Bruto Trimestral (R$):";
@@ -21,10 +22,12 @@ document.addEventListener('DOMContentLoaded', function () {
     
     selectMercado.addEventListener('change', function() {
         if (selectMercado.value === 'exportacao') {
-            groupIss.style.display = 'none';
+            groupIss.style.opacity = '0.3';
+            groupIss.style.pointerEvents = 'none';
             notaExportacao.style.display = 'block';
         } else {
-            groupIss.style.display = 'block';
+            groupIss.style.opacity = '1';
+            groupIss.style.pointerEvents = 'auto';
             notaExportacao.style.display = 'none';
         }
         calcularImpostos();
@@ -43,8 +46,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Regra do Lucro Presumido (32% de presunção para serviços)
         const percentualPresuncao = 0.32;
         const basePresumida = faturamento * percentualPresuncao;
-
-        // Definir teto do Adicional de IRPJ com base no período (Mensal: 20k | Trimestral: 60k)
         const tetoAdicionalIR = (periodo === 'mensal') ? 20000 : 60000;
 
         // 1. Definição das Retenções na Fonte (Apenas no cenário Nacional COM retenção)
@@ -60,10 +61,10 @@ document.addEventListener('DOMContentLoaded', function () {
             retidoCofins = faturamento * 0.03; // 3,0%
         }
 
-        // 2. Impostos Devidos Totais (Antes de abater retenções)
+        // 2. Impostos Devidos Totais
         const devidoIrpj = basePresumida * 0.15; // 15%
         
-        // Cálculo do Adicional de IRPJ (10% sobre o que excede o teto do período)
+        // Cálculo do Adicional de IRPJ (10% sobre o que excede o teto de 20k/60k)
         let devidoIrpjAdd = 0;
         let basePresumidaExcedente = basePresumida - tetoAdicionalIR;
         if (basePresumidaExcedente > 0) {
@@ -72,12 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const devidoCsll = basePresumida * 0.09; // 9%
 
-        // PIS, COFINS e ISS (Isentos se for Exportação)
+        // PIS, COFINS e ISS (Zeradinhos em caso de Exportação)
         const devidoPis = (mercado !== 'exportacao') ? (faturamento * 0.0065) : 0;
         const devidoCofins = (mercado !== 'exportacao') ? (faturamento * 0.03) : 0;
         const devidoIss = (mercado !== 'exportacao') ? (faturamento * (aliquotaIss / 100)) : 0;
 
-        // 3. Valor Líquido a Pagar nas Guias (Valor devido original menos o que foi retido na NF)
+        // 3. Valor Líquido a Pagar nas Guias (Abatendo os valores retidos)
         const pagarIrpj = Math.max(0, devidoIrpj - retidoIrrf);
         const pagarIrpjAdd = devidoIrpjAdd; 
         const pagarCsll = Math.max(0, devidoCsll - retidoCsll);
@@ -91,8 +92,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const aliquotaEfetiva = faturamento > 0 ? (totalCargaTributaria / faturamento) * 100 : 0;
 
         // --- PREENCHIMENTO VISUAL DA TABELA DETALHADA ---
-
-        // Atualizar Colunas de Faturamento Bruto de cada imposto
         document.getElementById('fat-irpj').innerText = formatarMoeda(faturamento);
         document.getElementById('fat-csll').innerText = formatarMoeda(faturamento);
         document.getElementById('fat-pis').innerText = formatarMoeda(faturamento);
@@ -145,4 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('res-total-impostos').innerText = formatarMoeda(totalCargaTributaria);
         document.getElementById('res-valor-liquido').innerText = formatarMoeda(valorLiquido);
     }
+
+    // Executa a primeira vez automaticamente
+    calcularImpostos();
 });
