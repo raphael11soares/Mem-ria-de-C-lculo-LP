@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabelaCorpo = document.getElementById('linhas-faturamento');
     const textoCliente = document.getElementById('texto-cliente');
     const btnCopiar = document.getElementById('btn-copiar');
+    const btnGerarPdf = document.getElementById('btn-gerar-pdf');
 
     const mesesPorTrimestre = {
         '1': ['Janeiro', 'Fevereiro', 'Março'],
@@ -88,12 +89,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const inputsNacSem = document.querySelectorAll('.fat-nac-sem');
         const inputsExp = document.querySelectorAll('.fat-exp');
 
-        // Reset: Ativa tudo
         ativarCampos(inputsNacCom, true);
         ativarCampos(inputsNacSem, true);
         ativarCampos(inputsExp, true);
 
-        // Bloqueia com base no cenário
         if (cenario === 'nacional_com') {
             ativarCampos(inputsNacSem, false); ativarCampos(inputsExp, false);
         } else if (cenario === 'nacional_sem') {
@@ -101,15 +100,15 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (cenario === 'exportacao') {
             ativarCampos(inputsNacCom, false); ativarCampos(inputsNacSem, false);
         } else if (cenario === 'misto_sem_exp') {
-            ativarCampos(inputsNacCom, false); // Só libera Nac Sem + Exp
+            ativarCampos(inputsNacCom, false); 
         } else if (cenario === 'misto_com_exp') {
-            ativarCampos(inputsNacSem, false); // Só libera Nac Com + Exp
+            ativarCampos(inputsNacSem, false); 
         }
         
         calcularPlataforma();
     }
 
-    function ativarCampos(nodeList, status) {
+    function activarCampos(nodeList, status) {
         nodeList.forEach(input => {
             input.disabled = !status;
             if (!status) input.value = 0; 
@@ -138,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const mercado = selectMercado.value;
         const periodo = selectPeriodo.value;
 
-        // --- GESTÃO DO LIMITE DE 120 MIL E RETROATIVO ---
         let percentualPresuncaoIRPJ = 0.32; 
         let valorDevidoRetroativo = 0;
         let baseRetroativaCalc = 0;
@@ -148,7 +146,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const alertaComp = document.getElementById('alerta-complemento');
         const rowRetroativo = document.getElementById('row-retroativo');
 
-        // Exibir a pergunta do retroativo pago apenas se houver acumulado e for não regulamentado
         if (regulamentado === 'nao' && faturamentoAnualProjetado > 120000) {
             groupRetroativoPago.style.display = 'block';
         } else {
@@ -173,17 +170,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 statusBox.className = "card-status status-alert";
                 
                 if (selectRetroativoPago.value === 'sim') {
-                    // Estourou, mas já pagou o passado. Segue o baile só com 32% no atual.
                     txtStatus.innerHTML = `<strong>Limite Já Regularizado:</strong> Cliente ultrapassou os R$ 120 mil anteriormente e já recolheu o IR Complementar. Aplicando apenas 32% no faturamento atual.`;
                     alertaComp.style.display = 'none';
                     rowRetroativo.style.display = 'none';
                 } else {
-                    // Estourou e AINDA NÃO PAGOU. Precisa cobrar a diferença do passado!
                     let baseAplicavel = (acumuladoAnterior > 120000) ? 120000 : acumuladoAnterior;
                     
                     if (acumuladoAnterior > 0) {
                         baseRetroativaCalc = baseAplicavel * 0.16;
-                        valorDevidoRetroativo = baseRetroativaCalc * 0.15; // 15% de IRPJ sobre a diferença da base
+                        valorDevidoRetroativo = baseRetroativaCalc * 0.15; 
                         
                         txtStatus.innerHTML = `<strong>Atenção - Limite Ultrapassado!</strong> Faturamento anual projetado: ${formatarMoeda(faturamentoAnualProjetado)}. A presunção passa a ser de 32%.`;
                         alertaComp.innerHTML = `<strong>IRPJ Complementar Gerado:</strong> Como a diferença passada ainda não foi paga, a simulação incluiu o recolhimento retroativo no valor de ${formatarMoeda(valorDevidoRetroativo)}.`;
@@ -195,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.getElementById('devido-retro').innerText = formatarMoeda(valorDevidoRetroativo);
                         document.getElementById('pagar-retro').innerText = formatarMoeda(valorDevidoRetroativo);
                     } else {
-                        // Estourou tudo só neste período, não tem passado para cobrar.
                         txtStatus.innerHTML = `<strong>Limite Ultrapassado:</strong> O faturamento atingiu ${formatarMoeda(faturamentoAnualProjetado)} apenas neste período. A presunção de todo o valor será 32%.`;
                         alertaComp.style.display = 'none';
                         rowRetroativo.style.display = 'none';
@@ -204,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // --- CÁLCULO DOS TRIBUTOS PADRÃO ---
         const basePresumidaIRPJ = faturamentoPeriodo * percentualPresuncaoIRPJ;
         const basePresumidaCSLL = faturamentoPeriodo * 0.32; 
         const tetoAdicionalIR = (periodo === 'mensal') ? 20000 : 60000;
@@ -238,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const valorLiquido = faturamentoPeriodo - totalCargaTributaria;
         const aliquotaEfetiva = faturamentoPeriodo > 0 ? (totalCargaTributaria / faturamentoPeriodo) * 100 : 0;
 
-        // --- PREENCHIMENTO DA TABELA E PAINEIS ---
+        // --- PREENCHIMENTO DA TABELA DA TELA ---
         document.getElementById('res-fat-periodo').innerText = formatarMoeda(faturamentoPeriodo);
         document.getElementById('t-fat-irpj').innerText = formatarMoeda(faturamentoPeriodo);
         document.getElementById('t-fat-csll').innerText = formatarMoeda(faturamentoPeriodo);
@@ -279,13 +272,16 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('res-total-impostos').innerText = formatarMoeda(totalCargaTributaria);
         document.getElementById('res-valor-liquido').innerText = formatarMoeda(valorLiquido);
 
+        document.getElementById('row-pis').style.opacity = (fatNacionalTotal === 0) ? '0.3' : '1';
+        document.getElementById('row-cofins').style.opacity = (fatNacionalTotal === 0) ? '0.3' : '1';
+        document.getElementById('row-iss').style.opacity = (mercado === 'exportacao') ? '0.3' : '1';
+
         gerarMensagemCliente(faturamentoPeriodo, fatNacionalTotal, fatExpTotal, totalCargaTributaria, totalRetencoes, totalGuias, valorLiquido, aliquotaEfetiva, periodo, percentualPresuncaoIRPJ, valorDevidoRetroativo);
     }
 
     function gerarMensagemCliente(totalBruto, nac, exp, carga, retido, guias, liquido, aliquota, periodo, presIrp, retroativo) {
         let txt = `Olá! Tudo bem? 👋\n\n`;
         txt += `Realizamos a simulação do seu planejamento tributário no *Lucro Presumido* referente ao período atual. Abaixo está o detalhamento:\n\n`;
-        
         txt += `📊 *RESUMO DO FATURAMENTO*\n`;
         txt += `• Período: ${periodo === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal'}\n`;
         txt += `• Total Bruto: *${formatarMoeda(totalBruto)}*\n`;
@@ -321,6 +317,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
         textoCliente.value = txt;
     }
+
+    // --- LÓGICA DE EXPORTAÇÃO DO PDF CORPORATIVO ---
+    btnGerarPdf.addEventListener('click', function () {
+        const report = document.getElementById('pdf-report-template');
+        
+        // 1. Alimenta os textos do cabeçalho do PDF com base na tela
+        document.getElementById('pdf-txt-cenario').innerText = selectMercado.options[selectMercado.selectedIndex].text;
+        document.getElementById('pdf-txt-periodo').innerText = selectPeriodo.value === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal';
+        document.getElementById('pdf-txt-data').innerText = new Date().toLocaleDateString('pt-BR');
+        document.getElementById('pdf-txt-enquadramento').innerText = document.getElementById('t-pres-irpj').innerText;
+
+        // 2. Alimenta os blocos numéricos consolidados
+        document.getElementById('pdf-val-bruto').innerText = document.getElementById('res-fat-periodo').innerText;
+        document.getElementById('pdf-val-impostos').innerText = document.getElementById('res-total-impostos').innerText;
+        document.getElementById('pdf-val-aliquota').innerText = document.getElementById('res-aliquota-efetiva').innerText;
+        document.getElementById('pdf-val-liquido').innerText = document.getElementById('res-valor-liquido').innerText;
+
+        // 3. Captura as linhas exatas da tabela detalhada da tela e joga no PDF
+        const linhasOriginais = document.querySelector('.card-details table延 tbody').innerHTML;
+        document.getElementById('pdf-table-rows-target').innerHTML = linhasOriginais;
+
+        // 4. Exibe temporariamente para a biblioteca fotografar
+        report.style.display = 'block';
+
+        const configuracoes = {
+            margin:       12,
+            filename:     'Memoria_de_Calculo_Tributaria.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Dispara a conversão e faz download automático
+        html2pdf().set(configuracoes).from(report).save().then(() => {
+            report.style.display = 'none'; // Esconde de volta ao terminar
+        });
+    });
 
     btnCopiar.addEventListener('click', function() {
         textoCliente.select();
