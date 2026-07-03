@@ -1,5 +1,4 @@
 * {
-    box-shadow: border-box;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -49,8 +48,14 @@ header p {
     gap: 15px;
 }
 
+.grid-3-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
 @media (max-width: 768px) {
-    .grid, .grid-inputs-internos {
+    .grid, .grid-inputs-internos, .grid-3-col {
         grid-template-columns: 1fr;
     }
 }
@@ -75,6 +80,7 @@ header p {
 
 .input-group {
     margin-bottom: 18px;
+    transition: opacity 0.2s ease;
 }
 
 .input-group label {
@@ -153,8 +159,17 @@ th {
     font-weight: 600;
 }
 
+tr {
+    transition: opacity 0.2s ease;
+}
+
 tr:hover {
     background-color: #f8fafc;
+}
+
+.col-fat {
+    color: #0369a1;
+    font-weight: 600;
 }
 
 .alert-box {
@@ -175,6 +190,40 @@ tr:hover {
     font-style: italic;
 }
 
-.col-fat {
-    color: #475569;
+.alert-box-warning {
+    margin-bottom: 15px;
+    padding: 12px;
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    color: #b45309;
+    font-size: 13px;
+    border-radius: 0 6px 6px 0;
+}
+
+textarea {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #334155;
+    background-color: #f8fafc;
+    resize: vertical;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.btn-primary {
+    background-color: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
 }
