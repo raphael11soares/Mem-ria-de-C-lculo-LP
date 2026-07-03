@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
         gerenciarHabilitacaoColunas();
     }
 
-    // --- LÓGICA INFALÍVEL DE BLOQUEIO DE COLUNAS ---
+    // --- LÓGICA DE BLOQUEIO DE COLUNAS ---
     function gerenciarHabilitacaoColunas() {
         const cenario = selectMercado.value;
         const inputsNacCom = document.querySelectorAll('.fat-nac-com');
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
         calcularPlataforma();
     }
 
-    function activarCampos(nodeList, status) {
+    function ativarCampos(nodeList, status) {
         nodeList.forEach(input => {
             input.disabled = !status;
             if (!status) input.value = 0; 
@@ -318,41 +318,36 @@ document.addEventListener('DOMContentLoaded', function () {
         textoCliente.value = txt;
     }
 
-    // --- LÓGICA DE EXPORTAÇÃO DO PDF CORPORATIVO ---
+    // --- LÓGICA DE EXPORTAÇÃO DO PDF CORRIGIDA ---
     btnGerarPdf.addEventListener('click', function () {
         const report = document.getElementById('pdf-report-template');
         
-        // 1. Alimenta os textos do cabeçalho do PDF com base na tela
+        // Alimenta dados textuais do PDF
         document.getElementById('pdf-txt-cenario').innerText = selectMercado.options[selectMercado.selectedIndex].text;
         document.getElementById('pdf-txt-periodo').innerText = selectPeriodo.value === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal';
         document.getElementById('pdf-txt-data').innerText = new Date().toLocaleDateString('pt-BR');
         document.getElementById('pdf-txt-enquadramento').innerText = document.getElementById('t-pres-irpj').innerText;
 
-        // 2. Alimenta os blocos numéricos consolidados
+        // Alimenta os blocos numéricos consolidados
         document.getElementById('pdf-val-bruto').innerText = document.getElementById('res-fat-periodo').innerText;
         document.getElementById('pdf-val-impostos').innerText = document.getElementById('res-total-impostos').innerText;
         document.getElementById('pdf-val-aliquota').innerText = document.getElementById('res-aliquota-efetiva').innerText;
         document.getElementById('pdf-val-liquido').innerText = document.getElementById('res-valor-liquido').innerText;
 
-        // 3. Captura as linhas exatas da tabela detalhada da tela e joga no PDF
-        const linhasOriginais = document.querySelector('.card-details table延 tbody').innerHTML;
+        // CORREÇÃO DO SELETOR: Injeta as linhas exatas da tabela da tela na tabela do PDF
+        const linhasOriginais = document.querySelector('#tabela-detalhada-origem tbody').innerHTML;
         document.getElementById('pdf-table-rows-target').innerHTML = linhasOriginais;
 
-        // 4. Exibe temporariamente para a biblioteca fotografar
-        report.style.display = 'block';
-
         const configuracoes = {
-            margin:       12,
+            margin:       15,
             filename:     'Memoria_de_Calculo_Tributaria.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Dispara a conversão e faz download automático
-        html2pdf().set(configuracoes).from(report).save().then(() => {
-            report.style.display = 'none'; // Esconde de volta ao terminar
-        });
+        // Dispara o download nativo do html2pdf
+        html2pdf().set(configuracoes).from(report).save();
     });
 
     btnCopiar.addEventListener('click', function() {
