@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Simulação Tributária - LP</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
     <div class="container">
@@ -136,7 +136,7 @@
             <div class="card card-details" style="margin-top: 25px;">
                 <h2>Memória de Cálculo e Detalhamento dos Impostos</h2>
                 <div class="table-responsive">
-                    <table>
+                    <table id="tabela-detalhada-origem">
                         <thead>
                             <tr>
                                 <th>Imposto</th>
@@ -226,7 +226,7 @@
             </div>
 
             <div class="card card-message" style="margin-top: 25px;">
-                <h2>📱 Texto Formatado para Envio ao Client</h2>
+                <h2>📱 Texto Formatado para Envio ao Cliente</h2>
                 <div class="alert-box-info" style="margin-bottom: 15px;">
                     O texto abaixo já contém formatação nativa para o WhatsApp (negritos e espaçamentos). Basta copiar e enviar!
                 </div>
@@ -253,10 +253,10 @@
         </div>
     </div>
 
-    <div id="pdf-report-template" style="display: none;">
+    <div id="pdf-report-template" style="position: absolute; left: -9999px; top: 0; width: 190mm; background: #ffffff;">
         <div class="pdf-wrapper">
             <div class="pdf-header">
-                <h2>RELATÓRIO EXECUTIVE DE PLANEJAMENTO TRIBUTÁRIO</h2>
+                <h2>RELATÓRIO EXECUTIVO DE PLANEJAMENTO TRIBUTÁRIO</h2>
                 <p class="pdf-subtitle">Simulação Avançada — Regime do Lucro Presumido</p>
                 <div class="pdf-divider"></div>
             </div>
@@ -293,7 +293,7 @@
                 <thead>
                     <tr>
                         <th>Tributo</th>
-                        <th>Base Bruta</th>
+                        <th>Faturamento Base</th>
                         <th>Presunção</th>
                         <th>Base de Calc.</th>
                         <th>Alíquota</th>
@@ -308,13 +308,13 @@
 
             <div class="pdf-footer-note">
                 <p><strong>Nota Legal Contábil:</strong> Este documento constitui um estudo técnico-estimativo fundamentado nas regras federais e municipais vigentes do Lucro Presumido (Art. 33 da Lei nº 9.250/95 e regulamentações do IR). Os valores simulados dependem da efetiva homologação das notas fiscais e enquadramento cadastral definitivo da pessoa jurídica.</p>
-                <div class="pdf-divider" style="margin-top: 40px; border-style: dashed;"></div>
-                <p class="pdf-sign">Elaborado por: Plataforma de Inteligência e Planejamento Tributário</p>
+                <div class="pdf-divider" style="margin-top: 30px; border-style: dashed;"></div>
+                <p class="pdf-sign" style="margin-top: 15px;">Elaborado por: Plataforma de Inteligência e Planejamento Tributário</p>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="script.js?v=3"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>
