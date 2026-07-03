@@ -179,8 +179,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     rowRetroativo.style.display = 'none';
                 } else {
                     // Estourou e AINDA NÃO PAGOU. Precisa cobrar a diferença do passado!
-                    // A diferença incide apenas sobre a parte do faturamento anterior que gozou dos 16%.
-                    // Se o faturamento anterior por si só já for maior que 120k, a base retroativa é no máximo os próprios 120k que gozaram do benefício (ou o valor exato do acumulado que ainda não foi recolhido). Para simplificar a simulação padrão: aplica-se a diferença (16%) sobre o faturamento passado.
                     let baseAplicavel = (acumuladoAnterior > 120000) ? 120000 : acumuladoAnterior;
                     
                     if (acumuladoAnterior > 0) {
