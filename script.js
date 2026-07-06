@@ -146,7 +146,6 @@ document.addEventListener('DOMContentLoaded', function () {
             groupRetroativoPago.style.display = 'none';
         }
 
-        // Reseta diagnóstico para o PDF ler limpo
         let textoStatusPDF = ""; 
 
         if (regulamentado === 'sim') {
@@ -180,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         baseRetroativaCalc = baseAplicavel * 0.16;
                         valorDevidoRetroativo = baseRetroativaCalc * 0.15; 
                         
-                        textoStatusPDF = "Atenção: Limite de R$ 120k Ultrapassado (32% + Retroativo)";
+                        textoStatusPDF = "Atenção: Limite Ultrapassado (32% + Retroativo)";
                         txtStatus.innerHTML = `<strong>${textoStatusPDF}!</strong> Faturamento anual projetado: ${formatarMoeda(faturamentoAnualProjetado)}.`;
                         alertaComp.innerHTML = `<strong>IRPJ Complementar Gerado:</strong> Incluído recolhimento retroativo no valor de ${formatarMoeda(valorDevidoRetroativo)}.`;
                         alertaComp.style.display = 'block';
@@ -200,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
         
-        // Salva o diagnóstico limpo num atributo para o PDF puxar depois
         statusBox.setAttribute('data-enquadramento-pdf', textoStatusPDF);
 
         const basePresumidaIRPJ = faturamentoPeriodo * percentualPresuncaoIRPJ;
@@ -322,15 +320,12 @@ document.addEventListener('DOMContentLoaded', function () {
         textoCliente.value = txt;
     }
 
-    // --- LÓGICA DE EXPORTAÇÃO DO PDF ANTI-QUEBRA DE PÁGINA ---
+    // --- NOVA IMPRESSORA VIRTUAL DO PDF (100% CONFIÁVEL) ---
     btnGerarPdf.addEventListener('click', function () {
         const cenarioText = selectMercado.options[selectMercado.selectedIndex].text;
         const periodoText = selectPeriodo.value === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal';
         const dataText = new Date().toLocaleDateString('pt-BR');
-        
-        // Puxa o status validado que criamos lá em cima
         const enquadramentoText = document.getElementById('status-limite-120k').getAttribute('data-enquadramento-pdf');
-
         const fatBruto = document.getElementById('res-fat-periodo').innerText;
         const cargaTrib = document.getElementById('res-total-impostos').innerText;
         const aliqEfetiva = document.getElementById('res-aliquota-efetiva').innerText;
@@ -341,12 +336,11 @@ document.addEventListener('DOMContentLoaded', function () {
         rows.forEach(row => {
             if (row.id === 'row-retroativo' && row.style.display === 'none') return;
             
-            // page-break-inside: avoid -> ISSO IMPEDE A LINHA DE QUEBRAR PELA METADE!
-            let cleanRow = '<tr style="page-break-inside: avoid;">';
+            let cleanRow = '<tr>';
             const cells = row.querySelectorAll('td');
             cells.forEach((cell, cellIndex) => {
                 let cellText = cell.innerText;
-                let style = 'padding: 8px 10px; border: 1px solid #cbd5e1;';
+                let style = 'padding: 6px 8px; border: 1px solid #cbd5e1;'; // Padding reduzido para caber folgado
                 style += cellIndex > 0 ? ' text-align: right;' : ' text-align: left;';
                 
                 if (row.id === 'row-retroativo') {
@@ -358,8 +352,18 @@ document.addEventListener('DOMContentLoaded', function () {
             rowsHtml += cleanRow;
         });
 
-        const pdfHtmlContent = `
-            <div style="padding: 30px; font-family: Arial, sans-serif; color: #1e293b; background: #ffffff;">
+        // Cria a folha A4 dinâmica no final da tela (escondida)
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.position = 'absolute';
+        pdfContainer.style.left = '-9999px';
+        pdfContainer.style.top = '0';
+        pdfContainer.style.width = '190mm'; // Tamanho exato A4 com respiro
+        pdfContainer.style.background = '#ffffff';
+        pdfContainer.style.padding = '10mm';
+        pdfContainer.style.fontFamily = 'Arial, sans-serif';
+
+        pdfContainer.innerHTML = `
+            <div style="color: #1e293b;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h2 style="font-size: 18px; color: #0f172a; margin-bottom: 5px; font-weight: bold;">RELATÓRIO EXECUTIVO DE PLANEJAMENTO TRIBUTÁRIO</h2>
                     <p style="font-size: 11px; color: #475569; text-transform: uppercase; margin: 0;">Simulação Avançada — Regime do Lucro Presumido</p>
@@ -373,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
 
                 <div style="font-size: 12px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">1. Resumo dos Indicadores Estratégicos</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
                     <tr style="border-bottom: 1px solid #e2e8f0;">
                         <td style="padding: 7px 0;">Faturamento Bruto Consolidado:</td>
                         <td style="text-align: right; padding: 7px 0; font-weight: bold;">${fatBruto}</td>
@@ -393,17 +397,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 </table>
 
                 <div style="font-size: 12px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">2. Memória de Cálculo Detalhada por Tributo</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; border: 1px solid #cbd5e1;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #cbd5e1;">
                     <thead>
                         <tr style="background-color: #f1f5f9; color: #334155; font-weight: bold;">
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Tributo</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Faturamento Base</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Presunção</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Base de Calc.</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Alíquota</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Vlr. Devido</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Retido (NF)</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">A Recolher</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: left;">Tributo</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Faturamento Base</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Presunção</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Base de Calc.</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Alíquota</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Vlr. Devido</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Retido (NF)</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">A Recolher</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -411,22 +415,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     </tbody>
                 </table>
 
-                <div style="margin-top: 25px; font-size: 10px; color: #64748b; line-height: 1.4;">
+                <div style="margin-top: 20px; font-size: 9.5px; color: #64748b; line-height: 1.4;">
                     <p><strong>Nota Legal Contábil:</strong> Este documento constitui um estudo técnico-estimativo fundamentado nas regras federais e municipais vigentes do Lucro Presumido (Art. 33 da Lei nº 9.250/95 e regulamentações do IR). Os valores simulados dependem da efetiva homologação das notas fiscais e enquadramento cadastral definitivo da pessoa jurídica.</p>
                 </div>
             </div>
         `;
 
+        document.body.appendChild(pdfContainer);
+
         const configuracoes = {
-            margin:       [10, 10, 10, 10], // Margem ajustada para caber tudo na primeira folha
+            margin:       10,
             filename:     'Memoria_de_Calculo_Tributaria.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Força a não quebrar as tabelas
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        html2pdf().set(configuracoes).from(pdfHtmlContent).save();
+        // Geração limpa e direta da div virtual
+        html2pdf().set(configuracoes).from(pdfContainer).save().then(() => {
+            document.body.removeChild(pdfContainer); // Destrói o papel da memória
+        });
     });
 
     btnCopiar.addEventListener('click', function() {
