@@ -274,9 +274,18 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('res-total-impostos').innerText = formatarMoeda(totalCargaTributaria);
         document.getElementById('res-valor-liquido').innerText = formatarMoeda(valorLiquido);
 
-        document.getElementById('row-pis').style.opacity = (fatNacionalTotal === 0) ? '0.3' : '1';
-        document.getElementById('row-cofins').style.opacity = (fatNacionalTotal === 0) ? '0.3' : '1';
-        document.getElementById('row-iss').style.opacity = (mercado === 'exportacao') ? '0.3' : '1';
+        // Opacidade visual na TELA
+        const isExport = (mercado === 'exportacao');
+        const semNacional = (fatNacionalTotal === 0);
+        
+        document.getElementById('row-pis').style.opacity = semNacional ? '0.3' : '1';
+        document.getElementById('row-cofins').style.opacity = semNacional ? '0.3' : '1';
+        document.getElementById('row-iss').style.opacity = isExport ? '0.3' : '1';
+
+        // Gravamos no HTML da tela um atributo de status para o gerador de PDF saber como renderizar
+        document.getElementById('row-pis').setAttribute('data-isento', semNacional ? 'true' : 'false');
+        document.getElementById('row-cofins').setAttribute('data-isento', semNacional ? 'true' : 'false');
+        document.getElementById('row-iss').setAttribute('data-isento', isExport ? 'true' : 'false');
 
         gerarMensagemCliente(faturamentoPeriodo, fatNacionalTotal, fatExpTotal, totalCargaTributaria, totalRetencoes, totalGuias, valorLiquido, aliquotaEfetiva, periodo, percentualPresuncaoIRPJ, valorDevidoRetroativo);
     }
@@ -320,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
         textoCliente.value = txt;
     }
 
-    // --- NOVA IMPRESSORA VIRTUAL DO PDF (MÉTODO SEGURO: STRING HTML) ---
+    // --- LÓGICA DE EXPORTAÇÃO DO PDF COM TRAVA DE RESPONSIVIDADE ---
     btnGerarPdf.addEventListener('click', function () {
         const cenarioText = selectMercado.options[selectMercado.selectedIndex].text;
         const periodoText = selectPeriodo.value === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal';
@@ -334,72 +343,85 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let rowsHtml = '';
         const rows = document.querySelectorAll('#tabela-detalhada-origem tbody tr');
+        
         rows.forEach(row => {
+            // Ignora a linha retroativa se ela não estiver ativada no cenário
             if (row.id === 'row-retroativo' && row.style.display === 'none') return;
             
-            // Regra crucial para o PDF não quebrar a linha no meio da folha
+            // Garantia de que a linha não será quebrada na virada da página
             let cleanRow = '<tr style="page-break-inside: avoid;">';
             const cells = row.querySelectorAll('td');
+            
             cells.forEach((cell, cellIndex) => {
                 let cellText = cell.innerText;
-                let style = 'padding: 6px 8px; border: 1px solid #cbd5e1;';
+                
+                // Diminuindo a fonte e o padding para caber todas as colunas com folga!
+                let style = 'padding: 6px 4px; border: 1px solid #cbd5e1; font-size: 9px; word-wrap: break-word;';
                 style += cellIndex > 0 ? ' text-align: right;' : ' text-align: left;';
                 
+                // Formatação do IRPJ Complementar
                 if (row.id === 'row-retroativo') {
                     style += ' color: #b45309; background-color: #fffbeb; font-weight: bold;';
                 }
+                
+                // Formatação das linhas isentas (Substituindo "opacity" por cores sólidas)
+                if (row.getAttribute('data-isento') === 'true') {
+                    style += ' color: #94a3b8; background-color: #f8fafc; font-style: italic;';
+                }
+
                 cleanRow += `<td style="${style}">${cellText}</td>`;
             });
             cleanRow += '</tr>';
             rowsHtml += cleanRow;
         });
 
+        // Wrapper com tamanho travado para renderizar perfeitamente no html2canvas
         const pdfHtmlContent = `
-            <div style="padding: 20px; font-family: Arial, sans-serif; color: #1e293b; background: #ffffff;">
+            <div style="width: 190mm; margin: 0 auto; padding: 15px; font-family: Arial, sans-serif; color: #1e293b; background: #ffffff; box-sizing: border-box;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h2 style="font-size: 18px; color: #0f172a; margin-bottom: 5px; font-weight: bold;">RELATÓRIO EXECUTIVO DE PLANEJAMENTO TRIBUTÁRIO</h2>
-                    <p style="font-size: 11px; color: #475569; text-transform: uppercase; margin: 0;">Simulação Avançada — Regime do Lucro Presumido</p>
+                    <p style="font-size: 10px; color: #475569; text-transform: uppercase; margin: 0;">Simulação Avançada — Regime do Lucro Presumido</p>
                     <div style="margin-top: 10px; border-top: 2px solid #0f172a; width: 100%;"></div>
                 </div>
                 
-                <div style="background-color: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; line-height: 1.6; margin-bottom: 20px;">
+                <div style="background-color: #f8fafc; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; line-height: 1.5; margin-bottom: 20px;">
                     <p style="margin: 0;"><strong>Cenário Selecionado:</strong> ${cenarioText}</p>
                     <p style="margin: 0;"><strong>Período Analisado:</strong> ${periodoText} | <strong>Data de Emissão:</strong> ${dataText}</p>
                     <p style="margin: 0;"><strong>Status de Enquadramento:</strong> ${enquadramentoText}</p>
                 </div>
 
-                <div style="font-size: 12px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">1. Resumo dos Indicadores Estratégicos</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+                <div style="font-size: 11px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">1. Resumo dos Indicadores Estratégicos</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px;">
                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 7px 0;">Faturamento Bruto Consolidado:</td>
-                        <td style="text-align: right; padding: 7px 0; font-weight: bold;">${fatBruto}</td>
+                        <td style="padding: 6px 0;">Faturamento Bruto Consolidado:</td>
+                        <td style="text-align: right; padding: 6px 0; font-weight: bold;">${fatBruto}</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 7px 0;">Carga Tributária Total Gerada:</td>
-                        <td style="text-align: right; padding: 7px 0; font-weight: bold; color: #b91c1c;">${cargaTrib}</td>
+                        <td style="padding: 6px 0;">Carga Tributária Total Gerada:</td>
+                        <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #b91c1c;">${cargaTrib}</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 7px 0;">Alíquota Efetiva Real sobre a Receita:</td>
-                        <td style="text-align: right; padding: 7px 0; font-weight: bold; color: #1d4ed8;">${aliqEfetiva}</td>
+                        <td style="padding: 6px 0;">Alíquota Efetiva Real sobre a Receita:</td>
+                        <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #1d4ed8;">${aliqEfetiva}</td>
                     </tr>
                     <tr style="background-color: #f0fdf4; border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 9px 10px; font-weight: bold;">Resultado Líquido Estimado (Disponível em Caixa):</td>
-                        <td style="text-align: right; padding: 9px 10px; font-weight: bold; color: #16a34a;">${fatLiquido}</td>
+                        <td style="padding: 8px 10px; font-weight: bold;">Resultado Líquido Estimado (Disponível em Caixa):</td>
+                        <td style="text-align: right; padding: 8px 10px; font-weight: bold; color: #16a34a;">${fatLiquido}</td>
                     </tr>
                 </table>
 
-                <div style="font-size: 12px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">2. Memória de Cálculo Detalhada por Tributo</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #cbd5e1;">
+                <div style="font-size: 11px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">2. Memória de Cálculo Detalhada por Tributo</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 9px; border: 1px solid #cbd5e1; table-layout: fixed;">
                     <thead>
                         <tr style="background-color: #f1f5f9; color: #334155; font-weight: bold;">
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: left;">Tributo</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Fat. Base</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Pres.</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Base Calc.</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Alíq.</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Devido</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Retido (NF)</th>
-                            <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">A Recolher</th>
+                            <th style="width: 18%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: left;">Tributo</th>
+                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Fat. Base</th>
+                            <th style="width: 10%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Pres.</th>
+                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Base Calc.</th>
+                            <th style="width: 8%;  padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Alíq.</th>
+                            <th style="width: 12%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Devido</th>
+                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Retido NF</th>
+                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">A Recolher</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -407,19 +429,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     </tbody>
                 </table>
 
-                <div style="margin-top: 20px; font-size: 9.5px; color: #64748b; line-height: 1.4;">
+                <div style="margin-top: 25px; font-size: 8.5px; color: #64748b; line-height: 1.4; text-align: justify;">
                     <p><strong>Nota Legal Contábil:</strong> Este documento constitui um estudo técnico-estimativo fundamentado nas regras federais e municipais vigentes do Lucro Presumido (Art. 33 da Lei nº 9.250/95 e regulamentações do IR). Os valores simulados dependem da efetiva homologação das notas fiscais e enquadramento cadastral definitivo da pessoa jurídica.</p>
                 </div>
             </div>
         `;
 
         const configuracoes = {
-            margin:       10, // Margens precisas
+            margin:       [10, 10, 10, 10], 
             filename:     'Memoria_de_Calculo_Tributaria.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Trava de segurança contra quebra de página!
+            // A configuração windowWidth evita que tabelas com 100% de tamanho sejam esmagadas!
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         };
 
         html2pdf().set(configuracoes).from(pdfHtmlContent).save();
