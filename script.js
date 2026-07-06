@@ -1,463 +1,247 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabBtns.forEach(btn => {
+    // ABAS
+    document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             this.classList.add('active');
-            const targetId = this.getAttribute('data-target');
-            document.getElementById(targetId).classList.add('active');
+            document.getElementById(this.getAttribute('data-target')).classList.add('active');
         });
     });
 
-    const selectPeriodo = document.getElementById('periodo');
-    const selectMercado = document.getElementById('mercado');
-    const selectTrimestre = document.getElementById('trimestre');
-    const selectRegulamentado = document.getElementById('regulamentado');
-    const inputAcumuladoAno = document.getElementById('acumulado_ano');
-    const selectRetroativoPago = document.getElementById('retroativo_pago');
-    const inputIss = document.getElementById('aliquota-iss');
-    
-    const groupTrimestre = document.getElementById('group-trimestre');
-    const groupAcumulado = document.getElementById('group-acumulado');
-    const groupRetroativoPago = document.getElementById('group-retroativo-pago');
-    const tabelaCorpo = document.getElementById('linhas-faturamento');
-    const textoCliente = document.getElementById('texto-cliente');
-    const btnCopiar = document.getElementById('btn-copiar');
-    const btnGerarPdf = document.getElementById('btn-gerar-pdf');
+    // SELETORES
+    const elPeriodo = document.getElementById('periodo');
+    const elTrimestre = document.getElementById('trimestre');
+    const elRegulamentado = document.getElementById('regulamentado');
+    const elAcumulado = document.getElementById('acumulado_ano');
+    const elRetroPago = document.getElementById('retroativo_pago');
+    const elMercado = document.getElementById('mercado');
+    const elIss = document.getElementById('aliquota-iss');
+    const tbodyFaturamento = document.getElementById('linhas-faturamento');
 
-    const mesesPorTrimestre = {
-        '1': ['Janeiro', 'Fevereiro', 'Março'],
-        '2': ['Abril', 'Maio', 'Junho'],
-        '3': ['Julho', 'Agosto', 'Setembro'],
-        '4': ['Outubro', 'Novembro', 'Dezembro']
-    };
-
-    selectPeriodo.addEventListener('change', function() {
-        groupTrimestre.style.display = (this.value === 'trimestral') ? 'block' : 'none';
-        renderizarLinhasFaturamento();
+    // EVENTOS
+    elPeriodo.addEventListener('change', () => {
+        document.getElementById('group-trimestre').style.display = elPeriodo.value === 'trimestral' ? 'block' : 'none';
+        gerarInputsFaturamento();
     });
-    
-    selectTrimestre.addEventListener('change', renderizarLinhasFaturamento);
-    selectMercado.addEventListener('change', gerenciarHabilitacaoColunas);
-    
-    selectRegulamentado.addEventListener('change', function() {
-        groupAcumulado.style.display = (this.value === 'nao') ? 'block' : 'none';
-        calcularPlataforma();
+    elTrimestre.addEventListener('change', gerarInputsFaturamento);
+    elRegulamentado.addEventListener('change', () => {
+        document.getElementById('group-acumulado').style.display = elRegulamentado.value === 'nao' ? 'block' : 'none';
+        calcularTudo();
     });
+    elAcumulado.addEventListener('input', calcularTudo);
+    elRetroPago.addEventListener('change', calcularTudo);
+    elMercado.addEventListener('change', travarColunas);
+    elIss.addEventListener('input', calcularTudo);
 
-    inputAcumuladoAno.addEventListener('input', calcularPlataforma);
-    selectRetroativoPago.addEventListener('change', calcularPlataforma);
-    inputIss.addEventListener('input', calcularPlataforma);
-
-    function renderizarLinhasFaturamento() {
-        tabelaCorpo.innerHTML = '';
-        let listagemMeses = ['Mês Único'];
-        if (selectPeriodo.value === 'trimestral') {
-            listagemMeses = mesesPorTrimestre[selectTrimestre.value];
-        }
-
-        listagemMeses.forEach((mes, index) => {
+    function gerarInputsFaturamento() {
+        tbodyFaturamento.innerHTML = '';
+        let linhas = elPeriodo.value === 'trimestral' ? ['Mês 1', 'Mês 2', 'Mês 3'] : ['Mês Único'];
+        
+        linhas.forEach((mes, idx) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${mes}</strong></td>
-                <td><input type="number" class="input-table fat-nac-com" value="${index===0 && selectPeriodo.value==='mensal' ? '500000' : '0'}" min="0" step="0.01"></td>
-                <td><input type="number" class="input-table fat-nac-sem" value="0" min="0" step="0.01"></td>
-                <td><input type="number" class="input-table fat-exp" value="0" min="0" step="0.01"></td>
+                <td><input type="number" class="fat-com input-table" value="${idx===0 && elPeriodo.value==='mensal' ? 500000 : 0}" step="0.01"></td>
+                <td><input type="number" class="fat-sem input-table" value="0" step="0.01"></td>
+                <td><input type="number" class="fat-exp input-table" value="0" step="0.01"></td>
             `;
-            tabelaCorpo.appendChild(tr);
+            tbodyFaturamento.appendChild(tr);
         });
-
-        document.querySelectorAll('.input-table').forEach(input => {
-            input.addEventListener('input', calcularPlataforma);
-        });
-
-        gerenciarHabilitacaoColunas();
-    }
-
-    function gerenciarHabilitacaoColunas() {
-        const cenario = selectMercado.value;
-        const inputsNacCom = document.querySelectorAll('.fat-nac-com');
-        const inputsNacSem = document.querySelectorAll('.fat-nac-sem');
-        const inputsExp = document.querySelectorAll('.fat-exp');
-
-        ativarCampos(inputsNacCom, true);
-        ativarCampos(inputsNacSem, true);
-        ativarCampos(inputsExp, true);
-
-        if (cenario === 'nacional_com') {
-            ativarCampos(inputsNacSem, false); ativarCampos(inputsExp, false);
-        } else if (cenario === 'nacional_sem') {
-            ativarCampos(inputsNacCom, false); ativarCampos(inputsExp, false);
-        } else if (cenario === 'exportacao') {
-            ativarCampos(inputsNacCom, false); ativarCampos(inputsNacSem, false);
-        } else if (cenario === 'misto_sem_exp') {
-            ativarCampos(inputsNacCom, false); 
-        } else if (cenario === 'misto_com_exp') {
-            ativarCampos(inputsNacSem, false); 
-        }
         
-        calcularPlataforma();
+        document.querySelectorAll('.input-table').forEach(inp => inp.addEventListener('input', calcularTudo));
+        travarColunas();
     }
 
-    function ativarCampos(nodeList, status) {
-        nodeList.forEach(input => {
-            input.disabled = !status;
-            if (!status) input.value = 0; 
-        });
-    }
+    function travarColunas() {
+        const cenario = elMercado.value;
+        const com = document.querySelectorAll('.fat-com');
+        const sem = document.querySelectorAll('.fat-sem');
+        const exp = document.querySelectorAll('.fat-exp');
 
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
+        const libera = (nodes) => nodes.forEach(n => { n.disabled = false; });
+        const bloqueia = (nodes) => nodes.forEach(n => { n.disabled = true; n.value = 0; });
 
-    function calcularPlataforma() {
-        let fatNacComTotal = 0; let fatNacSemTotal = 0; let fatExpTotal = 0;
-        document.querySelectorAll('.fat-nac-com').forEach(i => fatNacComTotal += parseFloat(i.value) || 0);
-        document.querySelectorAll('.fat-nac-sem').forEach(i => fatNacSemTotal += parseFloat(i.value) || 0);
-        document.querySelectorAll('.fat-exp').forEach(i => fatExpTotal += parseFloat(i.value) || 0);
+        libera(com); libera(sem); libera(exp);
 
-        const fatNacionalTotal = fatNacComTotal + fatNacSemTotal;
-        const faturamentoPeriodo = fatNacionalTotal + fatExpTotal;
+        if (cenario === 'nacional_com') { bloqueia(sem); bloqueia(exp); }
+        else if (cenario === 'nacional_sem') { bloqueia(com); bloqueia(exp); }
+        else if (cenario === 'exportacao') { bloqueia(com); bloqueia(sem); }
+        else if (cenario === 'misto_sem_exp') { bloqueia(com); }
+        else if (cenario === 'misto_com_exp') { bloqueia(sem); }
         
-        const acumuladoAnterior = parseFloat(inputAcumuladoAno.value) || 0;
-        const faturamentoAnualProjetado = acumuladoAnterior + faturamentoPeriodo;
+        calcularTudo();
+    }
 
-        const aliquotaIss = parseFloat(inputIss.value) || 0;
-        const regulamentado = selectRegulamentado.value;
-        const mercado = selectMercado.value;
-        const periodo = selectPeriodo.value;
+    function formataReal(v) { return v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}); }
 
-        let percentualPresuncaoIRPJ = 0.32; 
-        let valorDevidoRetroativo = 0;
-        let baseRetroativaCalc = 0;
+    function calcularTudo() {
+        let vCom = 0, vSem = 0, vExp = 0;
+        document.querySelectorAll('.fat-com').forEach(i => vCom += parseFloat(i.value) || 0);
+        document.querySelectorAll('.fat-sem').forEach(i => vSem += parseFloat(i.value) || 0);
+        document.querySelectorAll('.fat-exp').forEach(i => vExp += parseFloat(i.value) || 0);
+
+        let fatNacional = vCom + vSem;
+        let fatTotal = fatNacional + vExp;
+        let fatAcumuladoAntes = parseFloat(elAcumulado.value) || 0;
+        let fatAnual = fatAcumuladoAntes + fatTotal;
+        let iss = parseFloat(elIss.value) || 0;
+
+        // Lógica de Enquadramento 120k
+        let presIRPJ = 0.32;
+        let valorRetroativo = 0;
+        let baseRetroativa = 0;
+        let msgEnquadramento = "";
         
-        const statusBox = document.getElementById('status-limite-120k');
+        const boxStatus = document.getElementById('status-limite-120k');
         const txtStatus = document.getElementById('texto-status-120k');
-        const alertaComp = document.getElementById('alerta-complemento');
-        const rowRetroativo = document.getElementById('row-retroativo');
+        const alertComp = document.getElementById('alerta-complemento');
+        const rowRetro = document.getElementById('row-retroativo');
+        const grpPago = document.getElementById('group-retroativo-pago');
 
-        if (regulamentado === 'nao' && faturamentoAnualProjetado > 120000) {
-            groupRetroativoPago.style.display = 'block';
+        grpPago.style.display = (elRegulamentado.value === 'nao' && fatAnual > 120000) ? 'block' : 'none';
+
+        if (elRegulamentado.value === 'sim') {
+            msgEnquadramento = "Regulamentado (Fixo em 32%)";
+            boxStatus.className = "card-status status-disabled";
+            txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+            alertComp.style.display = 'none';
+            rowRetro.style.display = 'none';
         } else {
-            groupRetroativoPago.style.display = 'none';
-        }
-
-        let textoStatusPDF = ""; 
-
-        if (regulamentado === 'sim') {
-            percentualPresuncaoIRPJ = 0.32;
-            statusBox.className = "card-status status-disabled";
-            textoStatusPDF = "Profissão Regulamentada (32%)";
-            txtStatus.innerHTML = `<strong>${textoStatusPDF}:</strong> Utilização fixa de 32% sobre a receita bruta.`;
-            alertaComp.style.display = 'none';
-            rowRetroativo.style.display = 'none';
-        } else {
-            if (faturamentoAnualProjetado <= 120000) {
-                percentualPresuncaoIRPJ = 0.16;
-                statusBox.className = "card-status status-ok";
-                textoStatusPDF = "Dentro do Limite Benefício (16%)";
-                txtStatus.innerHTML = `<strong>${textoStatusPDF}:</strong> Faturamento anual projetado (${formatarMoeda(faturamentoAnualProjetado)}).`;
-                alertaComp.style.display = 'none';
-                rowRetroativo.style.display = 'none';
+            if (fatAnual <= 120000) {
+                presIRPJ = 0.16;
+                msgEnquadramento = "Benefício de 16% (Até 120k)";
+                boxStatus.className = "card-status status-ok";
+                txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                alertComp.style.display = 'none';
+                rowRetro.style.display = 'none';
             } else {
-                percentualPresuncaoIRPJ = 0.32;
-                statusBox.className = "card-status status-alert";
-                
-                if (selectRetroativoPago.value === 'sim') {
-                    textoStatusPDF = "Limite de R$ 120k Já Regularizado (32%)";
-                    txtStatus.innerHTML = `<strong>${textoStatusPDF}:</strong> Cliente ultrapassou os R$ 120 mil anteriormente e já recolheu o IR Complementar. Aplicando 32% no faturamento atual.`;
-                    alertaComp.style.display = 'none';
-                    rowRetroativo.style.display = 'none';
+                presIRPJ = 0.32;
+                boxStatus.className = "card-status status-alert";
+                if (elRetroPago.value === 'sim') {
+                    msgEnquadramento = "Limite Estourado (Já Regularizado) - 32%";
+                    txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                    alertComp.style.display = 'none';
+                    rowRetro.style.display = 'none';
                 } else {
-                    let baseAplicavel = (acumuladoAnterior > 120000) ? 120000 : acumuladoAnterior;
-                    
-                    if (acumuladoAnterior > 0) {
-                        baseRetroativaCalc = baseAplicavel * 0.16;
-                        valorDevidoRetroativo = baseRetroativaCalc * 0.15; 
-                        
-                        textoStatusPDF = "Atenção: Limite Ultrapassado (32% + Retroativo)";
-                        txtStatus.innerHTML = `<strong>${textoStatusPDF}!</strong> Faturamento anual projetado: ${formatarMoeda(faturamentoAnualProjetado)}.`;
-                        alertaComp.innerHTML = `<strong>IRPJ Complementar Gerado:</strong> Incluído recolhimento retroativo no valor de ${formatarMoeda(valorDevidoRetroativo)}.`;
-                        alertaComp.style.display = 'block';
-                        
-                        rowRetroativo.style.display = 'table-row';
-                        document.getElementById('t-fat-retro').innerText = formatarMoeda(baseAplicavel);
-                        document.getElementById('base-retro').innerText = formatarMoeda(baseRetroativaCalc);
-                        document.getElementById('devido-retro').innerText = formatarMoeda(valorDevidoRetroativo);
-                        document.getElementById('pagar-retro').innerText = formatarMoeda(valorDevidoRetroativo);
+                    let maxBase = fatAcumuladoAntes > 120000 ? 120000 : fatAcumuladoAntes;
+                    if (maxBase > 0) {
+                        baseRetroativa = maxBase * 0.16;
+                        valorRetroativo = baseRetroativa * 0.15;
+                        msgEnquadramento = "Limite Estourado (Cobrando Retroativo) - 32%";
+                        txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                        alertComp.innerHTML = `Gerado recolhimento do IRPJ Passado: ${formataReal(valorRetroativo)}`;
+                        alertComp.style.display = 'block';
+                        rowRetro.style.display = 'table-row';
                     } else {
-                        textoStatusPDF = "Limite Ultrapassado no Período (32%)";
-                        txtStatus.innerHTML = `<strong>${textoStatusPDF}:</strong> O faturamento atingiu ${formatarMoeda(faturamentoAnualProjetado)} apenas neste período. A presunção de todo o valor será 32%.`;
-                        alertaComp.style.display = 'none';
-                        rowRetroativo.style.display = 'none';
+                        msgEnquadramento = "Limite Estourado Neste Período - 32%";
+                        txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                        alertComp.style.display = 'none';
+                        rowRetro.style.display = 'none';
                     }
                 }
             }
         }
+
+        document.getElementById('pdf-enquadramento').innerText = msgEnquadramento;
+
+        // Cálculos
+        let baseIRPJ = fatTotal * presIRPJ;
+        let baseCSLL = fatTotal * 0.32;
+        let tetoAdicional = elPeriodo.value === 'mensal' ? 20000 : 60000;
         
-        statusBox.setAttribute('data-enquadramento-pdf', textoStatusPDF);
+        let rIrrf = vCom * 0.015;
+        let rCsll = vCom * 0.01;
+        let rPis = vCom * 0.0065;
+        let rCof = vCom * 0.03;
 
-        const basePresumidaIRPJ = faturamentoPeriodo * percentualPresuncaoIRPJ;
-        const basePresumidaCSLL = faturamentoPeriodo * 0.32; 
-        const tetoAdicionalIR = (periodo === 'mensal') ? 20000 : 60000;
-
-        let retidoIrrf = fatNacComTotal * 0.015;
-        let retidoCsll = fatNacComTotal * 0.01;
-        let retidoPis = fatNacComTotal * 0.0065;
-        let retidoCofins = fatNacComTotal * 0.03;
-
-        const devidoIrpj = basePresumidaIRPJ * 0.15;
+        let dIrpj = baseIRPJ * 0.15;
+        let exc = baseIRPJ - tetoAdicional;
+        let dAdd = exc > 0 ? exc * 0.10 : 0;
+        let dCsll = baseCSLL * 0.09;
         
-        let devidoIrpjAdd = 0;
-        let basePresumidaExcedente = basePresumidaIRPJ - tetoAdicionalIR;
-        if (basePresumidaExcedente > 0) devidoIrpjAdd = basePresumidaExcedente * 0.10;
+        // Isenção Exportação
+        let isExport = elMercado.value === 'exportacao';
+        let dPis = fatNacional * 0.0065;
+        let dCof = fatNacional * 0.03;
+        let dIss = isExport ? 0 : fatNacional * (iss / 100);
 
-        const devidoCsll = basePresumidaCSLL * 0.09;
-        const devidoPis = fatNacionalTotal * 0.0065;
-        const devidoCofins = fatNacionalTotal * 0.03;
-        const devidoIss = (mercado !== 'exportacao') ? (fatNacionalTotal * (aliquotaIss / 100)) : 0;
+        let pIrpj = Math.max(0, dIrpj - rIrrf);
+        let pCsll = Math.max(0, dCsll - rCsll);
+        let pPis = Math.max(0, dPis - rPis);
+        let pCof = Math.max(0, dCof - rCof);
 
-        const pagarIrpj = Math.max(0, devidoIrpj - retidoIrrf);
-        const pagarIrpjAdd = devidoIrpjAdd;
-        const pagarCsll = Math.max(0, devidoCsll - retidoCsll);
-        const pagarPis = Math.max(0, devidoPis - retidoPis);
-        const pagarCofins = Math.max(0, devidoCofins - retidoCofins);
-        const pagarIss = devidoIss;
+        let totTributos = dIrpj + dAdd + dCsll + dPis + dCof + dIss + valorRetroativo;
+        let totLiquido = fatTotal - totTributos;
+        let aliq = fatTotal > 0 ? (totTributos / fatTotal) * 100 : 0;
 
-        const totalCargaTributaria = devidoIrpj + devidoIrpjAdd + devidoCsll + devidoPis + devidoCofins + devidoIss + valorDevidoRetroativo;
-        const totalRetencoes = retidoIrrf + retidoCsll + retidoPis + retidoCofins;
-        const totalGuias = pagarIrpj + pagarIrpjAdd + pagarCsll + pagarPis + pagarCofins + pagarIss + valorDevidoRetroativo;
-        const valorLiquido = faturamentoPeriodo - totalCargaTributaria;
-        const aliquotaEfetiva = faturamentoPeriodo > 0 ? (totalCargaTributaria / faturamentoPeriodo) * 100 : 0;
+        // Atualiza a Tela
+        const id = (el, v) => document.getElementById(el).innerText = v;
+        id('res-aliquota-efetiva', aliq.toFixed(2).replace('.', ',') + '%');
+        id('res-total-impostos', formataReal(totTributos));
+        id('res-valor-liquido', formataReal(totLiquido));
+        id('res-fat-periodo', formataReal(fatTotal));
 
-        document.getElementById('res-fat-periodo').innerText = formatarMoeda(faturamentoPeriodo);
-        document.getElementById('t-fat-irpj').innerText = formatarMoeda(faturamentoPeriodo);
-        document.getElementById('t-fat-csll').innerText = formatarMoeda(faturamentoPeriodo);
-        document.getElementById('t-fat-pis').innerText = formatarMoeda(fatNacionalTotal);
-        document.getElementById('t-fat-cofins').innerText = formatarMoeda(fatNacionalTotal);
-        document.getElementById('t-fat-iss').innerText = formatarMoeda(fatNacionalTotal);
+        id('t-fat-irpj', formataReal(fatTotal)); id('t-pres-irpj', (presIRPJ*100)+'%'); id('base-irpj', formataReal(baseIRPJ)); id('devido-irpj', formataReal(dIrpj)); id('retido-irpj', formataReal(rIrrf)); id('pagar-irpj', formataReal(pIrpj));
+        id('t-fat-retro', formataReal(baseRetroativa / 0.16 || 0)); id('base-retro', formataReal(baseRetroativa)); id('devido-retro', formataReal(valorRetroativo)); id('pagar-retro', formataReal(valorRetroativo));
+        id('base-irpj-add', formataReal(exc > 0 ? exc : 0)); id('devido-irpj-add', formataReal(dAdd)); id('pagar-irpj-add', formataReal(dAdd));
+        id('t-fat-csll', formataReal(fatTotal)); id('base-csll', formataReal(baseCSLL)); id('devido-csll', formataReal(dCsll)); id('retido-csll', formataReal(rCsll)); id('pagar-csll', formataReal(pCsll));
+        id('t-fat-pis', formataReal(fatNacional)); id('base-pis', formataReal(fatNacional)); id('devido-pis', formataReal(dPis)); id('retido-pis', formataReal(rPis)); id('pagar-pis', formataReal(pPis));
+        id('t-fat-cofins', formataReal(fatNacional)); id('base-cofins', formataReal(fatNacional)); id('devido-cofins', formataReal(dCof)); id('retido-cofins', formataReal(rCof)); id('pagar-cofins', formataReal(pCof));
+        id('t-fat-iss', formataReal(fatNacional)); id('base-iss', formataReal(fatNacional)); id('aliquota-iss-tab', (isExport ? 0 : iss)+'%'); id('devido-iss', formataReal(dIss)); id('pagar-iss', formataReal(dIss));
 
-        document.getElementById('t-pres-irpj').innerText = `${percentualPresuncaoIRPJ * 100}%`;
-        document.getElementById('base-irpj').innerText = formatarMoeda(basePresumidaIRPJ);
-        document.getElementById('devido-irpj').innerText = formatarMoeda(devidoIrpj);
-        document.getElementById('retido-irpj').innerText = formatarMoeda(retidoIrrf);
-        document.getElementById('pagar-irpj').innerText = formatarMoeda(pagarIrpj);
+        document.getElementById('row-pis').style.opacity = fatNacional===0 ? '0.4' : '1';
+        document.getElementById('row-cofins').style.opacity = fatNacional===0 ? '0.4' : '1';
+        document.getElementById('row-iss').style.opacity = isExport ? '0.4' : '1';
 
-        document.getElementById('base-irpj-add').innerText = formatarMoeda(basePresumidaExcedente > 0 ? basePresumidaExcedente : 0);
-        document.getElementById('devido-irpj-add').innerText = formatarMoeda(devidoIrpjAdd);
-        document.getElementById('pagar-irpj-add').innerText = formatarMoeda(pagarIrpjAdd);
-
-        document.getElementById('base-csll').innerText = formatarMoeda(basePresumidaCSLL);
-        document.getElementById('devido-csll').innerText = formatarMoeda(devidoCsll);
-        document.getElementById('retido-csll').innerText = formatarMoeda(retidoCsll);
-        document.getElementById('pagar-csll').innerText = formatarMoeda(pagarCsll);
-
-        document.getElementById('base-pis').innerText = formatarMoeda(fatNacionalTotal);
-        document.getElementById('devido-pis').innerText = formatarMoeda(devidoPis);
-        document.getElementById('retido-pis').innerText = formatarMoeda(retidoPis);
-        document.getElementById('pagar-pis').innerText = formatarMoeda(pagarPis);
-
-        document.getElementById('base-cofins').innerText = formatarMoeda(fatNacionalTotal);
-        document.getElementById('devido-cofins').innerText = formatarMoeda(devidoCofins);
-        document.getElementById('retido-cofins').innerText = formatarMoeda(retidoCofins);
-        document.getElementById('pagar-cofins').innerText = formatarMoeda(pagarCofins);
-
-        document.getElementById('base-iss').innerText = formatarMoeda(fatNacionalTotal);
-        document.getElementById('devido-iss').innerText = formatarMoeda(devidoIss);
-        document.getElementById('pagar-iss').innerText = formatarMoeda(pagarIss);
-
-        document.getElementById('res-aliquota-efetiva').innerText = `${aliquotaEfetiva.toFixed(2)}%`.replace('.', ',');
-        document.getElementById('res-total-impostos').innerText = formatarMoeda(totalCargaTributaria);
-        document.getElementById('res-valor-liquido').innerText = formatarMoeda(valorLiquido);
-
-        // Opacidade visual na TELA
-        const isExport = (mercado === 'exportacao');
-        const semNacional = (fatNacionalTotal === 0);
-        
-        document.getElementById('row-pis').style.opacity = semNacional ? '0.3' : '1';
-        document.getElementById('row-cofins').style.opacity = semNacional ? '0.3' : '1';
-        document.getElementById('row-iss').style.opacity = isExport ? '0.3' : '1';
-
-        // Gravamos no HTML da tela um atributo de status para o gerador de PDF saber como renderizar
-        document.getElementById('row-pis').setAttribute('data-isento', semNacional ? 'true' : 'false');
-        document.getElementById('row-cofins').setAttribute('data-isento', semNacional ? 'true' : 'false');
-        document.getElementById('row-iss').setAttribute('data-isento', isExport ? 'true' : 'false');
-
-        gerarMensagemCliente(faturamentoPeriodo, fatNacionalTotal, fatExpTotal, totalCargaTributaria, totalRetencoes, totalGuias, valorLiquido, aliquotaEfetiva, periodo, percentualPresuncaoIRPJ, valorDevidoRetroativo);
+        // Preenche Whatsapp
+        document.getElementById('texto-cliente').value = `📊 SIMULAÇÃO TRIBUTÁRIA - LUCRO PRESUMIDO\n\n• Faturamento Bruto: ${formataReal(fatTotal)}\n• Carga Tributária Efetiva: ${aliq.toFixed(2).replace('.',',')}%\n• Total de Impostos Gerados: ${formataReal(totTributos)}\n\n• Faturamento Líquido Estimado: ${formataReal(totLiquido)}`;
     }
 
-    function gerarMensagemCliente(totalBruto, nac, exp, carga, retido, guias, liquido, aliquota, periodo, presIrp, retroativo) {
-        let txt = `Olá! Tudo bem? 👋\n\n`;
-        txt += `Realizamos a simulação do seu planejamento tributário no *Lucro Presumido* referente ao período atual. Abaixo está o detalhamento:\n\n`;
-        txt += `📊 *RESUMO DO FATURAMENTO*\n`;
-        txt += `• Período: ${periodo === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal'}\n`;
-        txt += `• Total Bruto: *${formatarMoeda(totalBruto)}*\n`;
-        if (exp > 0) {
-            txt += `  ├ Mercado Nacional: ${formatarMoeda(nac)}\n`;
-            txt += `  └ Exportação: ${formatarMoeda(exp)} _(Isento de PIS/COFINS/ISS)_\n`;
-        }
-        txt += `\n`;
-
-        if (retroativo > 0) {
-            txt += `⚠️ *AVISO IMPORTANTE: LIMITE DE R$ 120 MIL ANUAL*\n`;
-            txt += `O faturamento acumulado da sua empresa ultrapassou o teto de R$ 120 mil. A partir de agora, a presunção do IRPJ passa obrigatoriamente para 32%.\n`;
-            txt += `Devido a este estouro, o cálculo abaixo já inclui a guia de *IRPJ Complementar Retroativo* gerada sobre os meses passados, no valor de *${formatarMoeda(retroativo)}*.\n\n`;
-        } else if (presIrp === 0.32 && selectRegulamentado.value === 'nao' && selectRetroativoPago.value === 'sim') {
-            txt += `📌 *NOTA SOBRE O IRPJ*\n`;
-            txt += `Como a sua empresa já ultrapassou e regularizou o teto de R$ 120 mil anuais anteriormente, a presunção utilizada neste cálculo segue a alíquota fixa de 32%.\n\n`;
-        }
-
-        txt += `💰 *VALORES A RECOLHER*\n`;
-        txt += `• Carga Tributária Efetiva: *${aliquota.toFixed(2).replace('.', ',')}%*\n`;
-        txt += `• Total de Impostos Gerados: ${formatarMoeda(carga)}\n`;
+    // GERA O PDF
+    document.getElementById('btn-gerar-pdf').addEventListener('click', function() {
+        // 1. Popula Cabeçalho do PDF
+        document.getElementById('pdf-cenario').innerText = elMercado.options[elMercado.selectedIndex].text;
+        document.getElementById('pdf-periodo').innerText = elPeriodo.value === 'trimestral' ? elTrimestre.value + 'º Trimestre' : 'Mensal';
         
-        if (retido > 0) {
-            txt += `  ├ Já Retido nas Notas Fiscais: - ${formatarMoeda(retido)}\n`;
-            txt += `  └ *Saldo Restante a Pagar em Guias: ${formatarMoeda(guias)}*\n`;
-        } else {
-            txt += `  └ *Total a Pagar em Guias (DARF/DAS): ${formatarMoeda(guias)}*\n`;
-        }
+        // 2. Popula Resumo do PDF
+        document.getElementById('pdf-fat-bruto').innerText = document.getElementById('res-fat-periodo').innerText;
+        document.getElementById('pdf-carga').innerText = document.getElementById('res-total-impostos').innerText;
+        document.getElementById('pdf-aliq').innerText = document.getElementById('res-aliquota-efetiva').innerText;
+        document.getElementById('pdf-liquido').innerText = document.getElementById('res-valor-liquido').innerText;
+
+        // 3. Copia as linhas limpas da tela para o molde do PDF
+        const tbodyPdf = document.getElementById('pdf-tbody');
+        tbodyPdf.innerHTML = '';
         
-        txt += `\n💵 *VALOR LÍQUIDO ESTIMADO*\n`;
-        txt += `Faturamento líquido (dinheiro no caixa após impostos): *${formatarMoeda(liquido)}*\n\n`;
-        txt += `Qualquer dúvida sobre as memórias de cálculo, nossa equipe está à disposição! 🤝`;
-
-        textoCliente.value = txt;
-    }
-
-    // --- LÓGICA DE EXPORTAÇÃO DO PDF COM TRAVA DE RESPONSIVIDADE ---
-    btnGerarPdf.addEventListener('click', function () {
-        const cenarioText = selectMercado.options[selectMercado.selectedIndex].text;
-        const periodoText = selectPeriodo.value === 'trimestral' ? selectTrimestre.value + 'º Trimestre' : 'Mensal';
-        const dataText = new Date().toLocaleDateString('pt-BR');
-        const enquadramentoText = document.getElementById('status-limite-120k').getAttribute('data-enquadramento-pdf') || '';
-
-        const fatBruto = document.getElementById('res-fat-periodo').innerText;
-        const cargaTrib = document.getElementById('res-total-impostos').innerText;
-        const aliqEfetiva = document.getElementById('res-aliquota-efetiva').innerText;
-        const fatLiquido = document.getElementById('res-valor-liquido').innerText;
-
-        let rowsHtml = '';
-        const rows = document.querySelectorAll('#tabela-detalhada-origem tbody tr');
-        
-        rows.forEach(row => {
-            // Ignora a linha retroativa se ela não estiver ativada no cenário
-            if (row.id === 'row-retroativo' && row.style.display === 'none') return;
+        document.querySelectorAll('#tabela-detalhada tbody tr').forEach(row => {
+            if(row.id === 'row-retroativo' && row.style.display === 'none') return;
             
-            // Garantia de que a linha não será quebrada na virada da página
-            let cleanRow = '<tr style="page-break-inside: avoid;">';
-            const cells = row.querySelectorAll('td');
+            let novaLinha = document.createElement('tr');
+            let isBold = row.id === 'row-retroativo';
             
-            cells.forEach((cell, cellIndex) => {
-                let cellText = cell.innerText;
-                
-                // Diminuindo a fonte e o padding para caber todas as colunas com folga!
-                let style = 'padding: 6px 4px; border: 1px solid #cbd5e1; font-size: 9px; word-wrap: break-word;';
-                style += cellIndex > 0 ? ' text-align: right;' : ' text-align: left;';
-                
-                // Formatação do IRPJ Complementar
-                if (row.id === 'row-retroativo') {
-                    style += ' color: #b45309; background-color: #fffbeb; font-weight: bold;';
-                }
-                
-                // Formatação das linhas isentas (Substituindo "opacity" por cores sólidas)
-                if (row.getAttribute('data-isento') === 'true') {
-                    style += ' color: #94a3b8; background-color: #f8fafc; font-style: italic;';
-                }
-
-                cleanRow += `<td style="${style}">${cellText}</td>`;
+            row.querySelectorAll('td').forEach((td, idx) => {
+                let novaTd = document.createElement('td');
+                novaTd.innerText = td.innerText;
+                novaTd.style.border = "1px solid #000";
+                novaTd.style.padding = "6px";
+                novaTd.style.textAlign = idx === 0 ? "left" : "right";
+                if(isBold) novaTd.style.fontWeight = "bold";
+                novaLinha.appendChild(novaTd);
             });
-            cleanRow += '</tr>';
-            rowsHtml += cleanRow;
+            tbodyPdf.appendChild(novaLinha);
         });
 
-        // Wrapper com tamanho travado para renderizar perfeitamente no html2canvas
-        const pdfHtmlContent = `
-            <div style="width: 190mm; margin: 0 auto; padding: 15px; font-family: Arial, sans-serif; color: #1e293b; background: #ffffff; box-sizing: border-box;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="font-size: 18px; color: #0f172a; margin-bottom: 5px; font-weight: bold;">RELATÓRIO EXECUTIVO DE PLANEJAMENTO TRIBUTÁRIO</h2>
-                    <p style="font-size: 10px; color: #475569; text-transform: uppercase; margin: 0;">Simulação Avançada — Regime do Lucro Presumido</p>
-                    <div style="margin-top: 10px; border-top: 2px solid #0f172a; width: 100%;"></div>
-                </div>
-                
-                <div style="background-color: #f8fafc; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; line-height: 1.5; margin-bottom: 20px;">
-                    <p style="margin: 0;"><strong>Cenário Selecionado:</strong> ${cenarioText}</p>
-                    <p style="margin: 0;"><strong>Período Analisado:</strong> ${periodoText} | <strong>Data de Emissão:</strong> ${dataText}</p>
-                    <p style="margin: 0;"><strong>Status de Enquadramento:</strong> ${enquadramentoText}</p>
-                </div>
-
-                <div style="font-size: 11px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">1. Resumo dos Indicadores Estratégicos</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px;">
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 6px 0;">Faturamento Bruto Consolidado:</td>
-                        <td style="text-align: right; padding: 6px 0; font-weight: bold;">${fatBruto}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 6px 0;">Carga Tributária Total Gerada:</td>
-                        <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #b91c1c;">${cargaTrib}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 6px 0;">Alíquota Efetiva Real sobre a Receita:</td>
-                        <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #1d4ed8;">${aliqEfetiva}</td>
-                    </tr>
-                    <tr style="background-color: #f0fdf4; border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 8px 10px; font-weight: bold;">Resultado Líquido Estimado (Disponível em Caixa):</td>
-                        <td style="text-align: right; padding: 8px 10px; font-weight: bold; color: #16a34a;">${fatLiquido}</td>
-                    </tr>
-                </table>
-
-                <div style="font-size: 11px; font-weight: bold; color: #0f172a; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">2. Memória de Cálculo Detalhada por Tributo</div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 9px; border: 1px solid #cbd5e1; table-layout: fixed;">
-                    <thead>
-                        <tr style="background-color: #f1f5f9; color: #334155; font-weight: bold;">
-                            <th style="width: 18%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: left;">Tributo</th>
-                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Fat. Base</th>
-                            <th style="width: 10%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Pres.</th>
-                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Base Calc.</th>
-                            <th style="width: 8%;  padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Alíq.</th>
-                            <th style="width: 12%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Devido</th>
-                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">Retido NF</th>
-                            <th style="width: 13%; padding: 6px 4px; border: 1px solid #cbd5e1; text-align: right;">A Recolher</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 25px; font-size: 8.5px; color: #64748b; line-height: 1.4; text-align: justify;">
-                    <p><strong>Nota Legal Contábil:</strong> Este documento constitui um estudo técnico-estimativo fundamentado nas regras federais e municipais vigentes do Lucro Presumido (Art. 33 da Lei nº 9.250/95 e regulamentações do IR). Os valores simulados dependem da efetiva homologação das notas fiscais e enquadramento cadastral definitivo da pessoa jurídica.</p>
-                </div>
-            </div>
-        `;
-
-        const configuracoes = {
-            margin:       [10, 10, 10, 10], 
-            filename:     'Memoria_de_Calculo_Tributaria.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            // A configuração windowWidth evita que tabelas com 100% de tamanho sejam esmagadas!
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        // 4. Imprime
+        const opt = {
+            margin: 10,
+            filename: 'Simulacao_Tributaria.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-
-        html2pdf().set(configuracoes).from(pdfHtmlContent).save();
+        html2pdf().set(opt).from(document.getElementById('pdf-molde')).save();
     });
 
-    btnCopiar.addEventListener('click', function() {
-        textoCliente.select();
-        document.execCommand('copy');
-        const txtOriginal = this.innerText;
-        this.innerText = "✅ Mensagem Copiada com Sucesso!";
-        this.style.backgroundColor = "#16a34a";
-        setTimeout(() => {
-            this.innerText = txtOriginal;
-            this.style.backgroundColor = "#2563eb";
-        }, 2500);
-    });
-
-    renderizarLinhasFaturamento();
+    gerarInputsFaturamento();
 });
