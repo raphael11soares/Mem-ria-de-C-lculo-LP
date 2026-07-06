@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
     elAcumulado.addEventListener('input', calcularTudo);
     elRetroPago.addEventListener('change', calcularTudo);
     elMercado.addEventListener('change', travarColunas);
-    elIss.addEventListener('input', calcularTudo);
+    elIss.addEventListener('change', calcularTudo); // alterado para 'change' para melhor correção do ISS
 
     function gerarInputsFaturamento() {
         tbodyFaturamento.innerHTML = '';
@@ -86,6 +86,16 @@ document.addEventListener('DOMContentLoaded', function () {
         let fatAcumuladoAntes = parseFloat(elAcumulado.value) || 0;
         let fatAnual = fatAcumuladoAntes + fatTotal;
         let iss = parseFloat(elIss.value) || 0;
+
+        // VALIDAÇÃO INTELIGENTE DO ISS (Trava Constitucional de 2% a 5%)
+        let isExport = elMercado.value === 'exportacao';
+        if (!isExport) {
+            if (iss > 0 && iss < 2) {
+                iss = 2; elIss.value = 2;
+            } else if (iss > 5) {
+                iss = 5; elIss.value = 5;
+            }
+        }
 
         // Lógica de Enquadramento 120k
         let presIRPJ = 0.32;
@@ -145,23 +155,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('pdf-enquadramento').innerText = msgEnquadramento;
 
-        // Cálculos
+        // Cálculos Base
         let baseIRPJ = fatTotal * presIRPJ;
         let baseCSLL = fatTotal * 0.32;
         let tetoAdicional = elPeriodo.value === 'mensal' ? 20000 : 60000;
         
+        // REGRA CONTÁBIL DOS R$ 10,00 NA RETENÇÃO (Art. 67 da Lei 9.430/95)
         let rIrrf = vCom * 0.015;
-        let rCsll = vCom * 0.01;
-        let rPis = vCom * 0.0065;
-        let rCof = vCom * 0.03;
+        if (rIrrf <= 10) rIrrf = 0; // Zera se IRRF der R$ 10 ou menos
+
+        // CSRF (CSLL + PIS + COFINS) somam 4,65%. A regra de R$ 10 se aplica ao total da retenção conjunta.
+        let csrfTotal = vCom * 0.0465;
+        let rCsll = 0, rPis = 0, rCof = 0;
+        if (csrfTotal > 10) {
+            rCsll = vCom * 0.01;
+            rPis = vCom * 0.0065;
+            rCof = vCom * 0.03;
+        }
 
         let dIrpj = baseIRPJ * 0.15;
         let exc = baseIRPJ - tetoAdicional;
         let dAdd = exc > 0 ? exc * 0.10 : 0;
         let dCsll = baseCSLL * 0.09;
         
-        // Isenção Exportação
-        let isExport = elMercado.value === 'exportacao';
         let dPis = fatNacional * 0.0065;
         let dCof = fatNacional * 0.03;
         let dIss = isExport ? 0 : fatNacional * (iss / 100);
@@ -200,17 +216,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // GERA O PDF
     document.getElementById('btn-gerar-pdf').addEventListener('click', function() {
-        // 1. Popula Cabeçalho do PDF
         document.getElementById('pdf-cenario').innerText = elMercado.options[elMercado.selectedIndex].text;
         document.getElementById('pdf-periodo').innerText = elPeriodo.value === 'trimestral' ? elTrimestre.value + 'º Trimestre' : 'Mensal';
         
-        // 2. Popula Resumo do PDF
         document.getElementById('pdf-fat-bruto').innerText = document.getElementById('res-fat-periodo').innerText;
         document.getElementById('pdf-carga').innerText = document.getElementById('res-total-impostos').innerText;
         document.getElementById('pdf-aliq').innerText = document.getElementById('res-aliquota-efetiva').innerText;
         document.getElementById('pdf-liquido').innerText = document.getElementById('res-valor-liquido').innerText;
 
-        // 3. Copia as linhas limpas da tela para o molde do PDF
         const tbodyPdf = document.getElementById('pdf-tbody');
         tbodyPdf.innerHTML = '';
         
@@ -232,7 +245,6 @@ document.addEventListener('DOMContentLoaded', function () {
             tbodyPdf.appendChild(novaLinha);
         });
 
-        // 4. Imprime
         const opt = {
             margin: 10,
             filename: 'Simulacao_Tributaria.pdf',
