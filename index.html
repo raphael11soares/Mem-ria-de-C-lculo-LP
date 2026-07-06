@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Simulação Tributária - LP</title>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -31,7 +32,6 @@
                                 <option value="trimestral">Trimestral</option>
                             </select>
                         </div>
-
                         <div class="input-group" id="group-trimestre" style="display: none;">
                             <label for="trimestre">Trimestre de Referência:</label>
                             <select id="trimestre">
@@ -45,36 +45,35 @@
 
                     <div class="grid-2-col">
                         <div class="input-group">
-                            <label for="regulamentado">Profissão Regulamentada? (Ex: Médicos, Eng.)</label>
+                            <label for="regulamentado">Profissão Regulamentada?</label>
                             <select id="regulamentado">
-                                <option value="sim">Sim (Presunção travada em 32%)</option>
-                                <option value="nao">Não (Pode reduzir IRPJ para 16% até R$ 120k)</option>
+                                <option value="sim">Sim (Travado em 32%)</option>
+                                <option value="nao">Não (Redução para 16% até 120k)</option>
                             </select>
                         </div>
-
                         <div class="input-group" id="group-acumulado" style="display: none;">
-                            <label for="acumulado_ano">Faturamento Acumulado Anterior (R$):</label>
+                            <label for="acumulado_ano">Faturamento Anterior (R$):</label>
                             <input type="number" id="acumulado_ano" value="0" min="0" step="0.01">
                         </div>
                     </div>
 
-                    <div class="input-group" id="group-retroativo-pago" style="display: none; background: #fffbeb; padding: 10px; border-left: 4px solid #f59e0b; border-radius: 4px;">
-                        <label for="retroativo_pago" style="color: #b45309; margin-bottom: 5px;">⚠️ O cliente JÁ RECOLHEU o IRPJ retroativo referente ao estouro dos 120 mil em meses passados?</label>
-                        <select id="retroativo_pago" style="border-color: #fcd34d;">
-                            <option value="nao">Não (Cobrar a diferença retroativa nesta simulação)</option>
-                            <option value="sim">Sim (Já pagou, usar apenas 32% daqui pra frente)</option>
+                    <div class="input-group" id="group-retroativo-pago" style="display: none; background: #fffbeb; padding: 10px; border-left: 4px solid #f59e0b;">
+                        <label for="retroativo_pago" style="color: #b45309;">⚠️ Já recolheu o IRPJ retroativo do estouro dos 120k?</label>
+                        <select id="retroativo_pago">
+                            <option value="nao">Não (Cobrar retroativo agora)</option>
+                            <option value="sim">Sim (Já pagou, usar só 32%)</option>
                         </select>
                     </div>
 
                     <div class="input-group">
-                        <label for="mercado">Modalidade / Cenário do Cliente:</label>
+                        <label for="mercado">Cenário do Cliente:</label>
                         <select id="mercado">
                             <option value="nacional_com">Nacional (Apenas Com Retenção)</option>
                             <option value="nacional_sem">Nacional (Apenas Sem Retenção)</option>
                             <option value="exportacao">Exportação de Serviços (Apenas Exterior)</option>
-                            <option value="misto_sem_exp">Misto: Nacional (Sem Retenção) + Exportação</option>
-                            <option value="misto_com_exp">Misto: Nacional (Com Retenção) + Exportação</option>
-                            <option value="misto_todos">Misto Completo: Nac. (Com e Sem Retenção) + Exportação</option>
+                            <option value="misto_sem_exp">Misto: Nac. (Sem Retenção) + Exportação</option>
+                            <option value="misto_com_exp">Misto: Nac. (Com Retenção) + Exportação</option>
+                            <option value="misto_todos">Misto Completo: Nac. (Com e Sem) + Exportação</option>
                         </select>
                     </div>
 
@@ -83,177 +82,123 @@
                         <input type="number" id="aliquota-iss" value="5" min="2" max="5" step="0.1">
                     </div>
 
-                    <h2 style="margin-top: 25px;">2. Lançamento de Faturamento Bruto</h2>
-                    <p class="subtitle-table">Campos cinzas bloqueados pelo cenário não participam do cálculo.</p>
-                    
-                    <div class="table-responsive">
-                        <table class="table-inputs">
-                            <thead>
-                                <tr>
-                                    <th>Período</th>
-                                    <th>Nacional (Com Retenção)</th>
-                                    <th>Nacional (Sem Retenção)</th>
-                                    <th>Exportação (Exterior)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="linhas-faturamento">
-                                </tbody>
-                        </table>
-                    </div>
+                    <h2 style="margin-top: 25px;">2. Faturamento Bruto</h2>
+                    <table class="table-inputs">
+                        <thead>
+                            <tr>
+                                <th>Período</th>
+                                <th>Nac. (Com Retenção)</th>
+                                <th>Nac. (Sem Retenção)</th>
+                                <th>Exportação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linhas-faturamento"></tbody>
+                    </table>
                 </div>
 
                 <div class="space-sidebar">
                     <div class="card card-results">
                         <h2>Resumo Consolidado</h2>
                         <div class="result-row highlight">
-                            <span>Alíquota Efetiva Real:</span>
-                            <span id="res-aliquota-efetiva">0,00%</span>
+                            <span>Alíquota Efetiva:</span> <span id="res-aliquota-efetiva">0,00%</span>
                         </div>
                         <div class="result-row highlight total">
-                            <span>Carga Tributária Total:</span>
-                            <span id="res-total-impostos">R$ 0,00</span>
+                            <span>Carga Tributária:</span> <span id="res-total-impostos">R$ 0,00</span>
                         </div>
                         <div class="result-row highlight net">
-                            <span>Faturamento Líquido:</span>
-                            <span id="res-valor-liquido">R$ 0,00</span>
+                            <span>Fat. Líquido:</span> <span id="res-valor-liquido">R$ 0,00</span>
                         </div>
                         <div class="result-row font-sm">
-                            <span>Faturamento Bruto no Período:</span>
-                            <span id="res-fat-periodo" style="font-weight:600;">R$ 0,00</span>
+                            <span>Fat. Bruto do Período:</span> <span id="res-fat-periodo" style="font-weight:600;">R$ 0,00</span>
                         </div>
-                        
-                        <button id="btn-gerar-pdf" class="btn-pdf-trigger">📄 Gerar Relatório PDF Oficial</button>
+                        <button id="btn-gerar-pdf" class="btn-pdf-trigger">📄 Baixar PDF Oficial</button>
                     </div>
 
                     <div id="status-limite-120k" class="card-status status-disabled">
-                        <h3>Monitoramento (R$ 120k/Ano)</h3>
-                        <p id="texto-status-120k">Carregando informações...</p>
+                        <h3>Monitoramento (120k/Ano)</h3>
+                        <p id="texto-status-120k">Carregando...</p>
                         <div id="alerta-complemento" class="mini-alert" style="display:none;"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="card card-details" style="margin-top: 25px;">
-                <h2>Memória de Cálculo e Detalhamento dos Impostos</h2>
+            <div class="card card-details" style="margin-top: 20px;">
+                <h2>Memória de Cálculo</h2>
                 <div class="table-responsive">
-                    <table id="tabela-detalhada-origem">
+                    <table id="tabela-detalhada">
                         <thead>
                             <tr>
-                                <th>Imposto</th>
-                                <th>Faturamento Base</th>
-                                <th>Presunção (%)</th>
-                                <th>Base de Cálculo</th>
-                                <th>Alíquota</th>
-                                <th>Valor Devido</th>
-                                <th>Retenções (NF)</th>
-                                <th>A Pagar (Guia)</th>
+                                <th>Imposto</th><th>Fat. Base</th><th>Pres.(%)</th><th>Base Cálc.</th>
+                                <th>Alíq.</th><th>Devido</th><th>Retido (NF)</th><th>A Pagar</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><strong>IRPJ Normal</strong></td>
-                                <td id="t-fat-irpj">R$ 0,00</td>
-                                <td id="t-pres-irpj">32%</td>
-                                <td id="base-irpj">R$ 0,00</td>
-                                <td>15%</td>
-                                <td id="devido-irpj">R$ 0,00</td>
-                                <td id="retido-irpj">R$ 0,00</td>
-                                <td id="pagar-irpj">R$ 0,00</td>
-                            </tr>
-                            <tr id="row-retroativo" style="display:none; background-color: #fffbeb;">
-                                <td style="color: #b45309;"><strong>IRPJ Complementar (Retroativo 120k)</strong></td>
-                                <td id="t-fat-retro">-</td>
-                                <td>16% (Dif)</td>
-                                <td id="base-retro">R$ 0,00</td>
-                                <td>15%</td>
-                                <td id="devido-retro">R$ 0,00</td>
-                                <td>-</td>
-                                <td id="pagar-retro" style="font-weight:bold; color:#b45309;">R$ 0,00</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Adicional de IRPJ (10%)</strong></td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td id="base-irpj-add">R$ 0,00</td>
-                                <td>10%</td>
-                                <td id="devido-irpj-add">R$ 0,00</td>
-                                <td>-</td>
-                                <td id="pagar-irpj-add">R$ 0,00</td>
-                            </tr>
-                            <tr>
-                                <td><strong>CSLL</strong></td>
-                                <td id="t-fat-csll">R$ 0,00</td>
-                                <td>32%</td>
-                                <td id="base-csll">R$ 0,00</td>
-                                <td>9%</td>
-                                <td id="devido-csll">R$ 0,00</td>
-                                <td id="retido-csll">R$ 0,00</td>
-                                <td id="pagar-csll">R$ 0,00</td>
-                            </tr>
-                            <tr id="row-pis">
-                                <td><strong>PIS</strong></td>
-                                <td id="t-fat-pis">R$ 0,00</td>
-                                <td>100%</td>
-                                <td id="base-pis">R$ 0,00</td>
-                                <td>0,65%</td>
-                                <td id="devido-pis">R$ 0,00</td>
-                                <td id="retido-pis">R$ 0,00</td>
-                                <td id="pagar-pis">R$ 0,00</td>
-                            </tr>
-                            <tr id="row-cofins">
-                                <td><strong>COFINS</strong></td>
-                                <td id="t-fat-cofins">R$ 0,00</td>
-                                <td>100%</td>
-                                <td id="base-cofins">R$ 0,00</td>
-                                <td>3%</td>
-                                <td id="devido-cofins">R$ 0,00</td>
-                                <td id="retido-cofins">R$ 0,00</td>
-                                <td id="pagar-cofins">R$ 0,00</td>
-                            </tr>
-                            <tr id="row-iss">
-                                <td><strong>ISS</strong></td>
-                                <td id="t-fat-iss">R$ 0,00</td>
-                                <td>100%</td>
-                                <td id="base-iss">R$ 0,00</td>
-                                <td id="aliquota-iss-tab">5%</td>
-                                <td id="devido-iss">R$ 0,00</td>
-                                <td>-</td>
-                                <td id="pagar-iss">R$ 0,00</td>
-                            </tr>
+                            <tr><td><strong>IRPJ Normal</strong></td><td id="t-fat-irpj">R$ 0,00</td><td id="t-pres-irpj">32%</td><td id="base-irpj">R$ 0,00</td><td>15%</td><td id="devido-irpj">R$ 0,00</td><td id="retido-irpj">R$ 0,00</td><td id="pagar-irpj">R$ 0,00</td></tr>
+                            <tr id="row-retroativo" style="display:none; background:#fffbeb; color:#b45309; font-weight:bold;"><td>IRPJ Complementar (Retro.)</td><td id="t-fat-retro">-</td><td>16%</td><td id="base-retro">R$ 0,00</td><td>15%</td><td id="devido-retro">R$ 0,00</td><td>-</td><td id="pagar-retro">R$ 0,00</td></tr>
+                            <tr><td><strong>Adicional IRPJ</strong></td><td>-</td><td>-</td><td id="base-irpj-add">R$ 0,00</td><td>10%</td><td id="devido-irpj-add">R$ 0,00</td><td>-</td><td id="pagar-irpj-add">R$ 0,00</td></tr>
+                            <tr><td><strong>CSLL</strong></td><td id="t-fat-csll">R$ 0,00</td><td>32%</td><td id="base-csll">R$ 0,00</td><td>9%</td><td id="devido-csll">R$ 0,00</td><td id="retido-csll">R$ 0,00</td><td id="pagar-csll">R$ 0,00</td></tr>
+                            <tr id="row-pis"><td><strong>PIS</strong></td><td id="t-fat-pis">R$ 0,00</td><td>100%</td><td id="base-pis">R$ 0,00</td><td>0,65%</td><td id="devido-pis">R$ 0,00</td><td id="retido-pis">R$ 0,00</td><td id="pagar-pis">R$ 0,00</td></tr>
+                            <tr id="row-cofins"><td><strong>COFINS</strong></td><td id="t-fat-cofins">R$ 0,00</td><td>100%</td><td id="base-cofins">R$ 0,00</td><td>3%</td><td id="devido-cofins">R$ 0,00</td><td id="retido-cofins">R$ 0,00</td><td id="pagar-cofins">R$ 0,00</td></tr>
+                            <tr id="row-iss"><td><strong>ISS</strong></td><td id="t-fat-iss">R$ 0,00</td><td>100%</td><td id="base-iss">R$ 0,00</td><td id="aliquota-iss-tab">5%</td><td id="devido-iss">R$ 0,00</td><td>-</td><td id="pagar-iss">R$ 0,00</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="card card-message" style="margin-top: 25px;">
-                <h2>📱 Texto Formatado para Envio ao Cliente</h2>
-                <div class="alert-box-info" style="margin-bottom: 15px;">
-                    O textinho abaixo já contém formatação nativa para o WhatsApp (negritos e espaçamentos). Basta copiar e enviar!
-                </div>
-                <div class="whatsapp-preview">
-                    <textarea id="texto-cliente" rows="18" readonly></textarea>
-                </div>
-                <button id="btn-copiar" class="btn-primary" style="width: 100%; margin-top: 10px; font-size: 16px;">📋 Copiar Mensagem para o Cliente</button>
+            <div class="card card-message" style="margin-top: 20px;">
+                <h2>📱 Texto para Cliente</h2>
+                <textarea id="texto-cliente" rows="12" readonly style="width:100%; padding:15px; border-radius:8px; border:1px solid #cbd5e1;"></textarea>
+                <button id="btn-copiar" class="btn-primary" style="width:100%; margin-top:10px;">📋 Copiar Mensagem</button>
             </div>
         </div>
 
         <div id="tab-guia" class="tab-content">
             <div class="card">
-                <h2>Manual Prático de Cenários Tributários</h2>
-                <div class="guia-item">
-                    <h3>1. O Benefício do Limite de R$ 120 mil/ano (IRPJ Reduzido)</h3>
-                    <p>Empresas prestadoras de serviços no Lucro Presumido podem calcular o IRPJ sob uma base de <strong>16%</strong> (em vez de 32%), desde que o faturamento anual não ultrapasse R$ 120.000,00.</p>
-                    <p><strong>A Regra do Retroativo:</strong> Caso a empresa estoure o teto, ela deverá recolher a diferença tributária (16% de presunção sobre os meses passados que faturaram abaixo do teto) integralmente na apuração do trimestre do estouro.</p>
-                </div>
-                <div class="guia-item">
-                    <h3>2. Cenários Mistos</h3>
-                    <p>O sistema trava automaticamente as colunas da tabela de faturamento que não condizem com o cenário selecionado. O objetivo disso é impedir o lançamento acidental de valores em campos imunes ou não retidos, protegendo o cálculo da sua contabilidade.</p>
-                </div>
+                <h2>Guia Prático</h2>
+                <p>O limite de R$ 120 mil permite a redução da presunção do IRPJ para 16% em serviços não regulamentados. O estouro gera a obrigação de recolher o retroativo no trimestre da ocorrência.</p>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="script.js?v=5"></script>
+    <div id="pdf-molde" style="position: absolute; left: -9999px; top: 0; width: 793px; background: white; padding: 40px; font-family: Arial, sans-serif; color: #000;">
+        <h2 style="text-align:center; font-size: 22px; border-bottom: 2px solid #000; padding-bottom:10px;">RELATÓRIO DE PLANEJAMENTO TRIBUTÁRIO</h2>
+        <p style="text-align:center; font-size: 14px; color: #555; margin-bottom: 30px;">Regime do Lucro Presumido</p>
+        
+        <div style="background: #f4f4f4; padding: 15px; border: 1px solid #ccc; margin-bottom: 20px; font-size: 14px;">
+            <p><strong>Cenário:</strong> <span id="pdf-cenario"></span></p>
+            <p><strong>Período:</strong> <span id="pdf-periodo"></span></p>
+            <p><strong>Status de Enquadramento:</strong> <span id="pdf-enquadramento"></span></p>
+        </div>
+
+        <h3 style="font-size: 16px; margin-bottom: 10px;">1. Indicadores Consolidados</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Faturamento Bruto:</td><td id="pdf-fat-bruto" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold;"></td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Carga Tributária:</td><td id="pdf-carga" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold; color:red;"></td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Alíquota Efetiva:</td><td id="pdf-aliq" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold; color:blue;"></td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #ccc; background:#e8f5e9;">Resultado Líquido:</td><td id="pdf-liquido" style="padding:8px; border-bottom:1px solid #ccc; background:#e8f5e9; text-align:right; font-weight:bold; color:green;"></td></tr>
+        </table>
+
+        <h3 style="font-size: 16px; margin-bottom: 10px;">2. Memória de Cálculo Detalhada</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000;">
+            <thead style="background: #eee;">
+                <tr>
+                    <th style="border:1px solid #000; padding:8px;">Tributo</th>
+                    <th style="border:1px solid #000; padding:8px;">Base Bruta</th>
+                    <th style="border:1px solid #000; padding:8px;">Presunção</th>
+                    <th style="border:1px solid #000; padding:8px;">Base Cálc.</th>
+                    <th style="border:1px solid #000; padding:8px;">Alíquota</th>
+                    <th style="border:1px solid #000; padding:8px;">Devido</th>
+                    <th style="border:1px solid #000; padding:8px;">Retido</th>
+                    <th style="border:1px solid #000; padding:8px;">A Pagar</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-tbody">
+                </tbody>
+        </table>
+        
+        <p style="margin-top: 30px; font-size: 11px; color: #666; text-align: justify;">* Este documento é uma simulação técnica baseada na Lei 9.250/95. Condicionado à emissão correta das NFs.</p>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
