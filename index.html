@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Simulação Tributária - LP</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -111,7 +113,7 @@
                         <div class="result-row font-sm">
                             <span>Fat. Bruto do Período:</span> <span id="res-fat-periodo" style="font-weight:600;">R$ 0,00</span>
                         </div>
-                        <button id="btn-gerar-pdf" class="btn-pdf-trigger">📄 Baixar PDF Oficial</button>
+                        <button id="btn-gerar-pdf" class="btn-pdf-trigger">📄 Baixar PDF Executivo</button>
                     </div>
 
                     <div id="status-limite-120k" class="card-status status-disabled">
@@ -158,45 +160,6 @@
                 <p>O limite de R$ 120 mil permite a redução da presunção do IRPJ para 16% em serviços não regulamentados. O estouro gera a obrigação de recolher o retroativo no trimestre da ocorrência.</p>
             </div>
         </div>
-    </div>
-
-    <div id="pdf-molde" style="position: absolute; left: -9999px; top: 0; width: 793px; background: white; padding: 40px; font-family: Arial, sans-serif; color: #000;">
-        <h2 style="text-align:center; font-size: 22px; border-bottom: 2px solid #000; padding-bottom:10px;">RELATÓRIO DE PLANEJAMENTO TRIBUTÁRIO</h2>
-        <p style="text-align:center; font-size: 14px; color: #555; margin-bottom: 30px;">Regime do Lucro Presumido</p>
-        
-        <div style="background: #f4f4f4; padding: 15px; border: 1px solid #ccc; margin-bottom: 20px; font-size: 14px;">
-            <p><strong>Cenário:</strong> <span id="pdf-cenario"></span></p>
-            <p><strong>Período:</strong> <span id="pdf-periodo"></span></p>
-            <p><strong>Status de Enquadramento:</strong> <span id="pdf-enquadramento"></span></p>
-        </div>
-
-        <h3 style="font-size: 16px; margin-bottom: 10px;">1. Indicadores Consolidados</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
-            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Faturamento Bruto:</td><td id="pdf-fat-bruto" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold;"></td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Carga Tributária:</td><td id="pdf-carga" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold; color:red;"></td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #ccc;">Alíquota Efetiva:</td><td id="pdf-aliq" style="padding:8px; border-bottom:1px solid #ccc; text-align:right; font-weight:bold; color:blue;"></td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #ccc; background:#e8f5e9;">Resultado Líquido:</td><td id="pdf-liquido" style="padding:8px; border-bottom:1px solid #ccc; background:#e8f5e9; text-align:right; font-weight:bold; color:green;"></td></tr>
-        </table>
-
-        <h3 style="font-size: 16px; margin-bottom: 10px;">2. Memória de Cálculo Detalhada</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000;">
-            <thead style="background: #eee;">
-                <tr>
-                    <th style="border:1px solid #000; padding:8px;">Tributo</th>
-                    <th style="border:1px solid #000; padding:8px;">Base Bruta</th>
-                    <th style="border:1px solid #000; padding:8px;">Presunção</th>
-                    <th style="border:1px solid #000; padding:8px;">Base Cálc.</th>
-                    <th style="border:1px solid #000; padding:8px;">Alíquota</th>
-                    <th style="border:1px solid #000; padding:8px;">Devido</th>
-                    <th style="border:1px solid #000; padding:8px;">Retido</th>
-                    <th style="border:1px solid #000; padding:8px;">A Pagar</th>
-                </tr>
-            </thead>
-            <tbody id="pdf-tbody">
-                </tbody>
-        </table>
-        
-        <p style="margin-top: 30px; font-size: 11px; color: #666; text-align: justify;">* Este documento é uma simulação técnica baseada na Lei 9.250/95. Condicionado à emissão correta das NFs.</p>
     </div>
 
     <script src="script.js"></script>
