@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Variável global para armazenar o diagnóstico de enquadramento
+    let statusEnquadramentoPdf = "";
+
     // ABAS
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -32,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
     elAcumulado.addEventListener('input', calcularTudo);
     elRetroPago.addEventListener('change', calcularTudo);
     elMercado.addEventListener('change', travarColunas);
-    elIss.addEventListener('change', calcularTudo); // alterado para 'change' para melhor correção do ISS
+    elIss.addEventListener('change', calcularTudo);
 
     function gerarInputsFaturamento() {
         tbodyFaturamento.innerHTML = '';
@@ -87,21 +90,15 @@ document.addEventListener('DOMContentLoaded', function () {
         let fatAnual = fatAcumuladoAntes + fatTotal;
         let iss = parseFloat(elIss.value) || 0;
 
-        // VALIDAÇÃO INTELIGENTE DO ISS (Trava Constitucional de 2% a 5%)
         let isExport = elMercado.value === 'exportacao';
         if (!isExport) {
-            if (iss > 0 && iss < 2) {
-                iss = 2; elIss.value = 2;
-            } else if (iss > 5) {
-                iss = 5; elIss.value = 5;
-            }
+            if (iss > 0 && iss < 2) { iss = 2; elIss.value = 2; } 
+            else if (iss > 5) { iss = 5; elIss.value = 5; }
         }
 
-        // Lógica de Enquadramento 120k
         let presIRPJ = 0.32;
         let valorRetroativo = 0;
         let baseRetroativa = 0;
-        let msgEnquadramento = "";
         
         const boxStatus = document.getElementById('status-limite-120k');
         const txtStatus = document.getElementById('texto-status-120k');
@@ -112,25 +109,25 @@ document.addEventListener('DOMContentLoaded', function () {
         grpPago.style.display = (elRegulamentado.value === 'nao' && fatAnual > 120000) ? 'block' : 'none';
 
         if (elRegulamentado.value === 'sim') {
-            msgEnquadramento = "Regulamentado (Fixo em 32%)";
+            statusEnquadramentoPdf = "Regulamentado (Fixo em 32%)";
             boxStatus.className = "card-status status-disabled";
-            txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+            txtStatus.innerHTML = `<strong>${statusEnquadramentoPdf}</strong>`;
             alertComp.style.display = 'none';
             rowRetro.style.display = 'none';
         } else {
             if (fatAnual <= 120000) {
                 presIRPJ = 0.16;
-                msgEnquadramento = "Benefício de 16% (Até 120k)";
+                statusEnquadramentoPdf = "Benefício de 16% (Até 120k)";
                 boxStatus.className = "card-status status-ok";
-                txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                txtStatus.innerHTML = `<strong>${statusEnquadramentoPdf}</strong>`;
                 alertComp.style.display = 'none';
                 rowRetro.style.display = 'none';
             } else {
                 presIRPJ = 0.32;
                 boxStatus.className = "card-status status-alert";
                 if (elRetroPago.value === 'sim') {
-                    msgEnquadramento = "Limite Estourado (Já Regularizado) - 32%";
-                    txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                    statusEnquadramentoPdf = "Limite Estourado (Já Regularizado) - 32%";
+                    txtStatus.innerHTML = `<strong>${statusEnquadramentoPdf}</strong>`;
                     alertComp.style.display = 'none';
                     rowRetro.style.display = 'none';
                 } else {
@@ -138,14 +135,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (maxBase > 0) {
                         baseRetroativa = maxBase * 0.16;
                         valorRetroativo = baseRetroativa * 0.15;
-                        msgEnquadramento = "Limite Estourado (Cobrando Retroativo) - 32%";
-                        txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                        statusEnquadramentoPdf = "Atenção: Limite Estourado (Cobrando Retroativo)";
+                        txtStatus.innerHTML = `<strong>${statusEnquadramentoPdf}</strong>`;
                         alertComp.innerHTML = `Gerado recolhimento do IRPJ Passado: ${formataReal(valorRetroativo)}`;
                         alertComp.style.display = 'block';
                         rowRetro.style.display = 'table-row';
                     } else {
-                        msgEnquadramento = "Limite Estourado Neste Período - 32%";
-                        txtStatus.innerHTML = `<strong>${msgEnquadramento}</strong>`;
+                        statusEnquadramentoPdf = "Limite Estourado Neste Período - 32%";
+                        txtStatus.innerHTML = `<strong>${statusEnquadramentoPdf}</strong>`;
                         alertComp.style.display = 'none';
                         rowRetro.style.display = 'none';
                     }
@@ -153,18 +150,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        document.getElementById('pdf-enquadramento').innerText = msgEnquadramento;
-
-        // Cálculos Base
         let baseIRPJ = fatTotal * presIRPJ;
         let baseCSLL = fatTotal * 0.32;
         let tetoAdicional = elPeriodo.value === 'mensal' ? 20000 : 60000;
         
-        // REGRA CONTÁBIL DOS R$ 10,00 NA RETENÇÃO (Art. 67 da Lei 9.430/95)
         let rIrrf = vCom * 0.015;
-        if (rIrrf <= 10) rIrrf = 0; // Zera se IRRF der R$ 10 ou menos
+        if (rIrrf <= 10) rIrrf = 0;
 
-        // CSRF (CSLL + PIS + COFINS) somam 4,65%. A regra de R$ 10 se aplica ao total da retenção conjunta.
         let csrfTotal = vCom * 0.0465;
         let rCsll = 0, rPis = 0, rCof = 0;
         if (csrfTotal > 10) {
@@ -191,7 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
         let totLiquido = fatTotal - totTributos;
         let aliq = fatTotal > 0 ? (totTributos / fatTotal) * 100 : 0;
 
-        // Atualiza a Tela
         const id = (el, v) => document.getElementById(el).innerText = v;
         id('res-aliquota-efetiva', aliq.toFixed(2).replace('.', ',') + '%');
         id('res-total-impostos', formataReal(totTributos));
@@ -210,49 +201,120 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('row-cofins').style.opacity = fatNacional===0 ? '0.4' : '1';
         document.getElementById('row-iss').style.opacity = isExport ? '0.4' : '1';
 
-        // Preenche Whatsapp
         document.getElementById('texto-cliente').value = `📊 SIMULAÇÃO TRIBUTÁRIA - LUCRO PRESUMIDO\n\n• Faturamento Bruto: ${formataReal(fatTotal)}\n• Carga Tributária Efetiva: ${aliq.toFixed(2).replace('.',',')}%\n• Total de Impostos Gerados: ${formataReal(totTributos)}\n\n• Faturamento Líquido Estimado: ${formataReal(totLiquido)}`;
     }
 
-    // GERA O PDF
+    // --- O NOVO GERADOR DE PDF VETORIAL (NATIVO E INDESTRUTÍVEL) ---
     document.getElementById('btn-gerar-pdf').addEventListener('click', function() {
-        document.getElementById('pdf-cenario').innerText = elMercado.options[elMercado.selectedIndex].text;
-        document.getElementById('pdf-periodo').innerText = elPeriodo.value === 'trimestral' ? elTrimestre.value + 'º Trimestre' : 'Mensal';
-        
-        document.getElementById('pdf-fat-bruto').innerText = document.getElementById('res-fat-periodo').innerText;
-        document.getElementById('pdf-carga').innerText = document.getElementById('res-total-impostos').innerText;
-        document.getElementById('pdf-aliq').innerText = document.getElementById('res-aliquota-efetiva').innerText;
-        document.getElementById('pdf-liquido').innerText = document.getElementById('res-valor-liquido').innerText;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
 
-        const tbodyPdf = document.getElementById('pdf-tbody');
-        tbodyPdf.innerHTML = '';
+        // 1. Título e Cabeçalho
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("RELATÓRIO DE PLANEJAMENTO TRIBUTÁRIO", pageWidth / 2, 20, { align: "center" });
         
-        document.querySelectorAll('#tabela-detalhada tbody tr').forEach(row => {
-            if(row.id === 'row-retroativo' && row.style.display === 'none') return;
-            
-            let novaLinha = document.createElement('tr');
-            let isBold = row.id === 'row-retroativo';
-            
-            row.querySelectorAll('td').forEach((td, idx) => {
-                let novaTd = document.createElement('td');
-                novaTd.innerText = td.innerText;
-                novaTd.style.border = "1px solid #000";
-                novaTd.style.padding = "6px";
-                novaTd.style.textAlign = idx === 0 ? "left" : "right";
-                if(isBold) novaTd.style.fontWeight = "bold";
-                novaLinha.appendChild(novaTd);
-            });
-            tbodyPdf.appendChild(novaLinha);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Simulação Avançada — Regime do Lucro Presumido", pageWidth / 2, 26, { align: "center" });
+
+        doc.setDrawColor(0);
+        doc.setLineWidth(0.5);
+        doc.line(14, 30, pageWidth - 14, 30);
+
+        // 2. Informações Dinâmicas do Cenário
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        const cenarioText = elMercado.options[elMercado.selectedIndex].text;
+        const periodoText = elPeriodo.value === 'trimestral' ? elTrimestre.options[elTrimestre.selectedIndex].text : 'Mensal';
+        const dataEmissao = new Date().toLocaleDateString('pt-BR');
+
+        doc.setFont("helvetica", "bold"); doc.text("Cenário de Apuração:", 14, 40);
+        doc.setFont("helvetica", "normal"); doc.text(cenarioText, 52, 40);
+
+        doc.setFont("helvetica", "bold"); doc.text("Período / Data:", 14, 46);
+        doc.setFont("helvetica", "normal"); doc.text(`${periodoText} (Emitido em ${dataEmissao})`, 42, 46);
+
+        doc.setFont("helvetica", "bold"); doc.text("Status de Enquadramento:", 14, 52);
+        doc.setFont("helvetica", "normal"); doc.text(statusEnquadramentoPdf, 60, 52);
+
+        // 3. Tabela de Resumo Financeiro
+        doc.autoTable({
+            startY: 60,
+            theme: 'grid',
+            head: [['Indicador Estratégico', 'Valor Estimado']],
+            body: [
+                ['Faturamento Bruto Consolidado', document.getElementById('res-fat-periodo').innerText],
+                ['Carga Tributária Total Gerada', document.getElementById('res-total-impostos').innerText],
+                ['Alíquota Efetiva Real', document.getElementById('res-aliquota-efetiva').innerText],
+                ['Resultado Líquido (Disponível no Caixa)', document.getElementById('res-valor-liquido').innerText]
+            ],
+            headStyles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold' },
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 120 },
+                1: { halign: 'right', fontStyle: 'bold' }
+            },
+            styles: { fontSize: 10, cellPadding: 4 }
         });
 
-        const opt = {
-            margin: 10,
-            filename: 'Simulacao_Tributaria.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(document.getElementById('pdf-molde')).save();
+        // 4. Extração da Memória de Cálculo (Lê a tabela da tela)
+        const tableData = [];
+        document.querySelectorAll('#tabela-detalhada tbody tr').forEach(row => {
+            if(row.style.display === 'none') return;
+            const rowData = [];
+            row.querySelectorAll('td').forEach(td => rowData.push(td.innerText));
+            tableData.push(rowData);
+        });
+
+        // 5. Tabela Principal (Cálculo Fino)
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 12,
+            theme: 'grid',
+            head: [['Tributo', 'Fat. Base', 'Pres.(%)', 'Base Cálc.', 'Alíq.', 'Devido', 'Retido (NF)', 'A Pagar']],
+            body: tableData,
+            headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+            styles: { fontSize: 8.5, cellPadding: 3 },
+            columnStyles: {
+                0: { fontStyle: 'bold' },
+                1: { halign: 'right' },
+                2: { halign: 'center' },
+                3: { halign: 'right' },
+                4: { halign: 'center' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right', fontStyle: 'bold', textColor: [185, 28, 28] } // Cor Vermelha na coluna 'A Pagar'
+            },
+            didParseCell: function(data) {
+                // Destaca a linha do IRPJ Complementar (se existir)
+                if (data.row.raw[0] && data.row.raw[0].includes("Complementar")) {
+                    data.cell.styles.textColor = [180, 83, 9];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [255, 251, 235];
+                }
+            }
+        });
+
+        // 6. Rodapé Legal
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("* Nota Contábil: Este documento é uma simulação técnica estimativa fundamentada no Art. 33 da Lei nº 9.250/95.", 14, doc.lastAutoTable.finalY + 10);
+        
+        // Dispara o Download
+        doc.save('Memoria_Planejamento_Tributario.pdf');
+    });
+
+    btnCopiar.addEventListener('click', function() {
+        textoCliente.select();
+        document.execCommand('copy');
+        const txtOriginal = this.innerText;
+        this.innerText = "✅ Mensagem Copiada com Sucesso!";
+        this.style.backgroundColor = "#16a34a";
+        setTimeout(() => {
+            this.innerText = txtOriginal;
+            this.style.backgroundColor = "#2563eb";
+        }, 2500);
     });
 
     gerarInputsFaturamento();
